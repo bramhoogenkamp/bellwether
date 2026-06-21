@@ -32,6 +32,7 @@ _COND_LABEL = {
     "E": "market+tuned",
     "F": "superforecaster",
     "G": "status quo",
+    "M": "public market",
 }
 
 

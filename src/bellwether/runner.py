@@ -37,6 +37,8 @@ def _make_question_source(cfg: BenchmarkConfig):
         return get_question_source("mock_internal", seed=cfg.seed)
     if qc.source == "manifold":
         return get_question_source("manifold")
+    if qc.source == "polymarket":
+        return get_question_source("polymarket")
     if qc.source == "forecastbench":
         return get_question_source(
             "forecastbench",
@@ -99,14 +101,18 @@ def _score(rows: list[dict], config: BenchmarkConfig) -> BenchmarkResult:
         if probs:
             result.scores[cond] = scoring.score_all(probs, ys)
 
-    # Headline comparisons: is the market (D) better than naive (B) and tuned (C)?
-    for other, name in (("B", "D_vs_B"), ("C", "D_vs_C")):
-        if "D" in result.scores and other in result.scores:
-            a = [r["D"] for r in rows if "D" in r and other in r]
-            b = [r[other] for r in rows if "D" in r and other in r]
-            ys = [r["outcome"] for r in rows if "D" in r and other in r]
+    # Headline comparisons (ΔBrier = Brier_a - Brier_b; negative => a is better):
+    #   does the market beat naive/tuned? and does Bellwether beat the public market?
+    pairs = [("D", "B", "D_vs_B"), ("D", "C", "D_vs_C")]
+    if "M" in result.scores:  # M = the public market's own probability
+        pairs += [("D", "M", "D_vs_M"), ("E", "M", "E_vs_M"), ("B", "M", "B_vs_M")]
+    for a, b, name in pairs:
+        if a in result.scores and b in result.scores:
+            pa = [r[a] for r in rows if a in r and b in r]
+            pb = [r[b] for r in rows if a in r and b in r]
+            ys = [r["outcome"] for r in rows if a in r and b in r]
             result.deltas[name] = scoring.paired_bootstrap_brier_delta(
-                a, b, ys, seed=config.seed
+                pa, pb, ys, seed=config.seed
             )
     return result
 

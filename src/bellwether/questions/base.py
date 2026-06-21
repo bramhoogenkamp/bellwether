@@ -68,6 +68,10 @@ def get_question_source(name: str, **kwargs) -> QuestionSource:
         from .manifold import ManifoldQuestionSource
 
         return ManifoldQuestionSource(**kwargs)
+    if name == "polymarket":
+        from .polymarket import PolymarketQuestionSource
+
+        return PolymarketQuestionSource(**kwargs)
     if name == "forecastbench":
         from .forecastbench import ForecastBenchQuestionSource
 

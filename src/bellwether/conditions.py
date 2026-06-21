@@ -7,6 +7,7 @@
   E  ensemble of market + tuned                     -- best-of-both (AIA finding)
   F  superforecaster baseline (from the question)   -- human gold standard (if present)
   G  company status-quo forecast (from the question) -- the incumbent to beat (if present)
+  M  public market's own probability (from the question) -- e.g. Polymarket/Manifold crowd
 
 ``compute_conditions`` returns only the enabled conditions for which data exists
 (F/G are skipped when the question carries no such baseline, e.g. mock questions
@@ -55,5 +56,7 @@ def compute_conditions(
         out["F"] = float(question.superforecaster_prob)
     if "G" in enabled and question.status_quo_prob is not None:
         out["G"] = float(question.status_quo_prob)
+    if "M" in enabled and question.market_prob is not None:
+        out["M"] = float(question.market_prob)  # the public market's own probability
 
     return out

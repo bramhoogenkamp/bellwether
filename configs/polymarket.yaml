@@ -1,0 +1,42 @@
+# Benchmark Bellwether against a real-money public market (Polymarket).
+# Condition M = the market's own mid-life probability. The headline deltas then
+# answer: does Bellwether (D/E/B) beat the Polymarket crowd (M)?
+#
+# Leakage: the Polymarket source restricts to markets resolved after 2025-07-01
+# (post the cheap models' cutoffs). With NO retrieval our agents have little to go
+# on, so expect the real-money crowd to win — this run quantifies that gap and sets
+# the bar retrieval must clear.
+
+experiment_name: agent-market
+run_name: polymarket-vs-bellwether
+conditions: [A, B, C, D, E, M]
+seed: 0
+
+evidence:
+  source: none
+  max_items: 0
+
+swarm:
+  models:
+    - openai/gpt-4o-mini
+    - google/gemini-2.5-flash-lite
+    - meta-llama/llama-3.1-8b-instruct
+  n_agents: 6
+  lenses: [base_rate, inside_view]
+  forecasts_per_agent: 1
+  temperature: 0.7
+
+market:
+  max_loss_budget: 100.0
+  kelly_fraction: 0.5
+  max_bet_fraction: 0.25
+  rounds: 2
+  starting_bankroll: 100.0
+
+calibration:
+  extremize_coef: 1.7320508
+
+questions:
+  source: polymarket
+  limit: 15
+  leakage_guard: true
