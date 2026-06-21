@@ -64,10 +64,22 @@ headline metrics. See `research/design-questions.md` for the reasoning behind ea
 
 ```bash
 # one-time setup (uv: https://docs.astral.sh/uv/)
-uv venv .venv && uv pip install --python .venv/bin/python numpy scipy pytest pydantic pydantic-settings pyyaml
-# (full install for the agent/benchmark phases: uv pip install -e .)
+uv venv .venv && uv pip install --python .venv/bin/python -e .
 
-.venv/bin/python -m pytest          # run the unit tests
+.venv/bin/python -m pytest                          # run the unit tests
+
+# run the A-G benchmark offline (FakeLLM + mock questions — free, no API key):
+.venv/bin/python scripts/run_benchmark.py --limit 120
+
+# log runs to MLflow, then browse the runs-table to compare configs:
+.venv/bin/python scripts/run_benchmark.py --mlflow
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+
+# watch a market form on one question (offline mock):
+.venv/bin/python scripts/demo_live.py
+
+# real models via OpenRouter (needs OPENROUTER_API_KEY in .env):
+.venv/bin/python scripts/run_benchmark.py --live
 ```
 
 Design rationale for every choice: [`research/design-questions.md`](research/design-questions.md).
@@ -75,18 +87,26 @@ Design rationale for every choice: [`research/design-questions.md`](research/des
 ### Code layout
 ```
 src/bellwether/
-  market/lmsr.py      LMSR market maker (cost/price/trade, b from max-loss budget)
-  market/trading.py   fractional-Kelly position sizing
-  scoring.py          Brier, BSS, log-loss, calibration/ECE, paired bootstrap
-  calibrate.py        sqrt(3) extremizing transform (+ fit to own history)
-  config.py           typed YAML config (logged to MLflow as run params)
-configs/default.yaml  the knobs you sweep
-tests/                unit tests for the core (run with pytest)
+  questions/    where events come from: mock_internal (offline), manifold, forecastbench
+  evidence/     how agents get information: mock_internal signal, web stub, MCP-ready seam
+  agents/       LLM clients (FakeLLM + LiteLLM/OpenRouter), Agent, Swarm
+  market/       LMSR market maker + fractional-Kelly trading
+  aggregate/    naive (B), tuned (C), market (D), ensemble (E)
+  conditions.py the A-G benchmark conditions
+  scoring.py    Brier, BSS, log-loss, calibration/ECE, paired bootstrap
+  calibrate.py  sqrt(3) extremizing transform (+ fit to own history)
+  runner.py     questions -> evidence -> swarm -> conditions -> scores -> MLflow
+  config.py     typed YAML config (logged to MLflow as run params)
+configs/default.yaml  the knobs you sweep      scripts/  run_benchmark, demo_live, pull_questions
+tests/                unit + offline end-to-end tests (run with pytest)
 ```
 
 ## Status
 
-Building (2026-06-21). **Done:** Phase 0 (skeleton + tooling) and Phase 1 (LMSR engine + scoring +
-calibration), 31 unit tests passing. **Next:** Phase 2 (question + evidence adapters, mock-first), then the
-agent swarm and the A–G benchmark. The decisive milestone is Experiment 02 (does the market beat a tuned
-aggregator?) — see [`experiments/README.md`](experiments/README.md).
+Building (2026-06-21). **Done:** Phases 0–5 — the full pipeline runs end-to-end **offline** (mock questions +
+deterministic FakeLLM → swarm → LMSR market → conditions A–G → scoring → MLflow), 58 tests passing. On the
+calibrated mock signal the swarm recovers the truth (≈ oracle), the ensemble (E) wins, and everything beats the
+biased status-quo baseline — while the market (D) ≈ naive (B), i.e. no market edge yet on *already-calibrated*
+inputs. **Next:** Phase 6 — the real benchmark on ForecastBench / Manifold with live models (needs
+`OPENROUTER_API_KEY`), where under-confident real LLMs are where the market/ensemble should earn their keep.
+The decisive test: does the market (D) beat the tuned aggregator (C)? See [`experiments/README.md`](experiments/README.md).

@@ -34,7 +34,7 @@ _TEMPLATES = [
 class MockInternalQuestionSource:
     """Generates a fixed, reproducible set of resolved internal questions."""
 
-    def __init__(self, n: int = 24, seed: int = 0):
+    def __init__(self, n: int = 200, seed: int = 0):
         self.n = n
         self.seed = seed
 

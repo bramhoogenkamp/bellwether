@@ -10,5 +10,6 @@ __pycache__/
 
 # experiment tracking + data cache
 mlruns/
+mlflow.db
 data/
 *.png

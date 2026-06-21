@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
+from typing import Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -68,7 +69,9 @@ class CalibrationConfig(BaseModel):
 
 class QuestionSetConfig(BaseModel):
     source: str = "mock_internal"   # forecastbench | manifold | mock_internal
-    name: str = "demo"
+    name: str = "demo"              # for forecastbench: the question_set filename
+    resolution_set: Optional[str] = None  # forecastbench: the matching resolution file
+    data_dir: str = "data/forecastbench"
     limit: int = 20
     leakage_guard: bool = True      # forbid retrieval after a question's issue date
 
