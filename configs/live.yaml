@@ -1,0 +1,41 @@
+# Live benchmark config: real models via OpenRouter on resolved Manifold markets.
+# Cheap, diverse models keep cost low. Evidence is "none" (the web source is a stub),
+# so agents forecast zero-shot from the question text — pure LLM judgment.
+#
+# Leakage caveat: resolved Manifold markets can leak outcomes to a model that already
+# "knows" them. We pull the newest resolved markets (likely post knowledge-cutoff) to
+# limit this, but for rigorous numbers use ForecastBench's leak-free question sets.
+
+experiment_name: agent-market
+run_name: manifold-live
+conditions: [A, B, C, D, E]
+seed: 0
+
+evidence:
+  source: none
+  max_items: 0
+
+swarm:
+  models:
+    - openai/gpt-4o-mini
+    - google/gemini-2.5-flash-lite
+    - meta-llama/llama-3.1-8b-instruct
+  n_agents: 6
+  lenses: [base_rate, inside_view]
+  forecasts_per_agent: 1
+  temperature: 0.7
+
+market:
+  max_loss_budget: 100.0
+  kelly_fraction: 0.5
+  max_bet_fraction: 0.25
+  rounds: 2
+  starting_bankroll: 100.0
+
+calibration:
+  extremize_coef: 1.7320508
+
+questions:
+  source: manifold
+  limit: 12
+  leakage_guard: true

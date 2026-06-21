@@ -27,9 +27,18 @@ def _to_date(ms: int | None):
 
 
 class ManifoldQuestionSource:
-    def __init__(self, limit_scan: int = 500, timeout: float = 20.0):
+    def __init__(
+        self,
+        limit_scan: int = 1000,
+        timeout: float = 20.0,
+        min_volume: float = 250.0,
+        min_days: float = 3.0,
+    ):
         self.limit_scan = limit_scan
         self.timeout = timeout
+        # Quality filters: skip low-volume spam and instant-resolve test markets.
+        self.min_volume = min_volume
+        self.min_days = min_days
 
     def fetch(self, limit: int = 20) -> list[Question]:
         import httpx  # lazy: only needed for this network source
@@ -53,6 +62,11 @@ class ManifoldQuestionSource:
                     res = m.get("resolution")
                     if res not in ("YES", "NO"):
                         continue  # skip MKT/CANCEL/ambiguous resolutions
+                    if m.get("volume", 0) < self.min_volume:
+                        continue  # low engagement -> likely spam/personal
+                    created, resolved_t = m.get("createdTime"), m.get("resolutionTime")
+                    if created and resolved_t and (resolved_t - created) < self.min_days * 86_400_000:
+                        continue  # resolved almost immediately -> test/spam market
                     out.append(
                         Question(
                             id=f"manifold-{m['id']}",

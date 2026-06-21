@@ -103,10 +103,17 @@ tests/                unit + offline end-to-end tests (run with pytest)
 
 ## Status
 
-Building (2026-06-21). **Done:** Phases 0–5 — the full pipeline runs end-to-end **offline** (mock questions +
-deterministic FakeLLM → swarm → LMSR market → conditions A–G → scoring → MLflow), 58 tests passing. On the
-calibrated mock signal the swarm recovers the truth (≈ oracle), the ensemble (E) wins, and everything beats the
-biased status-quo baseline — while the market (D) ≈ naive (B), i.e. no market edge yet on *already-calibrated*
-inputs. **Next:** Phase 6 — the real benchmark on ForecastBench / Manifold with live models (needs
-`OPENROUTER_API_KEY`), where under-confident real LLMs are where the market/ensemble should earn their keep.
-The decisive test: does the market (D) beat the tuned aggregator (C)? See [`experiments/README.md`](experiments/README.md).
+Building (2026-06-21). **Done:** Phases 0–6 — the full pipeline runs end-to-end both **offline** (mock + FakeLLM)
+and **live** (real models via OpenRouter), 58 tests passing.
+
+- **Offline (calibrated signal present):** the swarm recovers the truth (≈ oracle), the ensemble (E) wins, and
+  everything beats the biased status-quo baseline; the market (D) ≈ naive (B) on already-calibrated inputs.
+- **Live first benchmark** (25 leak-free June-2026 Manifold questions, cheap models, **no retrieval**): all
+  conditions tie at Brier ≈ 0.25, **BSS ≈ 0 — no skill.** With no information in the agents' hands there is no
+  signal for *any* aggregator to exploit. The pipeline is faithful (it doesn't fake skill) and this confirms
+  the thesis: **differentiated information is the binding constraint, not the mechanism.** See
+  [`experiments/06-first-benchmark/`](experiments/06-first-benchmark/README.md).
+
+**Next (the real unlock):** implement **retrieval** — the web evidence source (with an `as_of` date filter)
+and/or internal data via the MCP seam — so agents actually have signal. Only then does the decisive test (does
+the market D beat the tuned aggregator C?) become meaningful. See [`experiments/README.md`](experiments/README.md).

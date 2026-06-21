@@ -11,6 +11,8 @@ diverse forecasters, not from headcount.
 
 from __future__ import annotations
 
+import sys
+
 from ..config import Lens, SwarmConfig
 from ..evidence.base import EvidenceItem
 from ..questions.base import Question
@@ -39,5 +41,11 @@ class Swarm:
         forecasts: list[Forecast] = []
         for agent in self.agents:
             for sample in range(self.cfg.forecasts_per_agent):
-                forecasts.append(agent.forecast(question, evidence, sample=sample))
+                try:
+                    forecasts.append(agent.forecast(question, evidence, sample=sample))
+                except Exception as exc:  # one flaky model shouldn't kill the run
+                    print(
+                        f"[swarm] {agent.model}/{agent.lens.value} failed: {exc}",
+                        file=sys.stderr,
+                    )
         return forecasts
