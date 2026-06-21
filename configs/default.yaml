@@ -1,0 +1,39 @@
+# Default benchmark config. Every field maps to agentmarket.config.BenchmarkConfig.
+# The runner logs this whole file to MLflow as run params, so changing a knob here
+# and re-running gives you a new, comparable row in the MLflow runs-table.
+
+experiment_name: agent-market
+run_name: default
+conditions: [A, B, C, D, E]   # A=single LLM, B=naive mean, C=tuned, D=market, E=ensemble
+seed: 0
+
+evidence:
+  source: mock_internal       # mock_internal | web | none
+  max_items: 10               # keep the brief small (context sweet spot ~5-15)
+
+swarm:
+  # Several model families = genuine error decorrelation (the key diversity lever).
+  models:
+    - openai/gpt-4o-mini
+    - anthropic/claude-3.5-sonnet
+    - google/gemini-flash-1.5
+  n_agents: 6
+  lenses: [base_rate, inside_view]
+  forecasts_per_agent: 1
+  temperature: 0.7
+
+market:
+  max_loss_budget: 100.0      # b = budget / ln(2) for a binary market
+  kelly_fraction: 0.5         # fractional Kelly (half) — calmer than full Kelly
+  max_bet_fraction: 0.25      # hard cap so one agent can't steamroll the price
+  rounds: 2                   # passes over the agents
+  starting_bankroll: 100.0
+
+calibration:
+  extremize_coef: 1.7320508   # sqrt(3); 1.0 disables extremizing
+
+questions:
+  source: mock_internal       # forecastbench | manifold | mock_internal
+  name: demo
+  limit: 20
+  leakage_guard: true
