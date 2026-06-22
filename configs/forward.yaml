@@ -1,0 +1,36 @@
+# Real-data forward test: a diverse swarm forecasts OPEN Polymarket questions with
+# web-researched, odds-stripped evidence partitioned across agents (dispersed private
+# information), then deliberates. Outcomes do not exist yet, so we score on resolution.
+
+experiment_name: bellwether-forward
+run_name: forward-pilot
+seed: 0
+
+evidence:
+  source: web        # OpenRouter :online research pass, odds/markets stripped
+  max_items: 8       # ~2 findings per agent once partitioned across 4
+
+swarm:
+  models:
+    - openai/gpt-5-mini
+    - anthropic/claude-sonnet-4.5
+    - google/gemini-2.5-pro
+    - deepseek/deepseek-r1
+  n_agents: 4
+  lenses: [neutral]
+  forecasts_per_agent: 1
+  temperature: 1.0
+
+market:
+  max_loss_budget: 100.0
+  kelly_fraction: 0.5
+  max_bet_fraction: 0.25
+  rounds: 3
+  starting_bankroll: 100.0
+
+calibration:
+  extremize_coef: 1.0  # off; strong reasoning models are already fairly confident
+
+questions:
+  source: polymarket
+  limit: 40

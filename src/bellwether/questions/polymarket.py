@@ -18,7 +18,7 @@ Network only.
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from .base import Question
 
@@ -119,6 +119,64 @@ class PolymarketQuestionSource:
             market_prob=market_prob,
             metadata={"slug": m.get("slug", "")},
         )
+
+    def fetch_open_within(self, days: int = 7, limit: int = 40) -> list[Question]:
+        """Open binary markets resolving within ``days`` (short-horizon forward test).
+
+        Uses the Gamma end-date window so we target soon-resolving markets directly,
+        rather than the highest-volume markets (which are long-horizon). Same filters as
+        ``fetch_open``: binary Yes/No, above ``min_volume``, and a genuinely uncertain
+        price. The endDate window is reliable here because we read it as a server filter.
+        """
+        import httpx
+
+        today = datetime.now(timezone.utc).date()
+        cutoff = today + timedelta(days=days)
+        out: list[Question] = []
+        with httpx.Client(timeout=self.timeout) as client:
+            resp = client.get(
+                _GAMMA,
+                params={
+                    "closed": "false",
+                    "active": "true",
+                    "order": "volumeNum",
+                    "ascending": "false",
+                    "limit": self.scan_limit,
+                    "end_date_min": today.isoformat(),
+                    "end_date_max": cutoff.isoformat(),
+                },
+            )
+            resp.raise_for_status()
+            for m in resp.json():
+                if len(out) >= limit:
+                    break
+                if m.get("outcomes") != '["Yes", "No"]':
+                    continue
+                if (m.get("volumeNum") or 0) < self.min_volume:
+                    continue
+                try:
+                    yes = float(json.loads(m["outcomePrices"])[0])
+                except (json.JSONDecodeError, KeyError, IndexError, ValueError, TypeError):
+                    continue
+                if not (0.05 < yes < 0.95):
+                    continue
+                rdate = _parse_iso(m.get("endDate"))
+                if rdate is None or not (today <= rdate <= cutoff):
+                    continue
+                out.append(
+                    Question(
+                        id=f"poly-open-{m.get('id', '')}",
+                        text=m.get("question", ""),
+                        issue_date=today,
+                        resolution_date=rdate,
+                        outcome=None,
+                        category="polymarket-open",
+                        source="polymarket",
+                        market_prob=yes,
+                        metadata={"slug": m.get("slug", "")},
+                    )
+                )
+        return out
 
     def fetch_open(self, limit: int = 10) -> list[Question]:
         """Currently-OPEN binary markets (outcome unknown -> honest forward-test).
