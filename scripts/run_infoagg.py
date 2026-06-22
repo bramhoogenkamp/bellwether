@@ -29,6 +29,8 @@ import argparse
 import json
 import os
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 os.environ.setdefault("LITELLM_LOG", "ERROR")
@@ -112,34 +114,40 @@ def run_cell(cell, cfg, client, n, log_path, concurrency=8):
     )
 
     # Run instances concurrently — each is ~3*n_agents sequential model calls, so this
-    # is where the wall-clock savings live. Results re-ordered by index afterward.
-    computed = [None] * len(instances)
-    if concurrency > 1 and len(instances) > 1:
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+    # is where the wall-clock savings live. We log + print each instance as it finishes
+    # (under a lock) so progress is visible live.
+    rows, priv_matrix, disagreements = [], [], []
+    lock = threading.Lock()
+    total = len(instances)
+
+    def handle(i, inst, private, probs):
+        ps = [f.probability for f in private]
+        with lock:
+            rows.append({"y": inst.question.outcome, **probs})
+            priv_matrix.append(ps if ps else [0.5] * cell["n_agents"])
+            disagreements.append(float(np.std(ps)) if ps else 0.0)
+            with log_path.open("a") as fh:
+                fh.write(json.dumps({
+                    "cell": cell["label"], "structure": cell["structure"],
+                    "n_agents": cell["n_agents"], "instance": i,
+                    "outcome": inst.question.outcome, "conditions": probs,
+                    "disagreement": disagreements[-1],
+                    "agents": [{"model": f.model, "p": f.probability, "thesis": f.thesis[:160]}
+                               for f in private],
+                }) + "\n")
+            print(f"  [{cell['label']}] {len(rows)}/{total} done", flush=True)
+
+    if concurrency > 1 and total > 1:
         with ThreadPoolExecutor(max_workers=concurrency) as ex:
             futs = {ex.submit(_instance_result, swarm, cfg, inst, cfg.seed + i): i
                     for i, inst in enumerate(instances)}
             for fut in as_completed(futs):
-                computed[futs[fut]] = fut.result()
+                inst, private, probs = fut.result()
+                handle(futs[fut], inst, private, probs)
     else:
         for i, inst in enumerate(instances):
-            computed[i] = _instance_result(swarm, cfg, inst, cfg.seed + i)
-
-    rows, priv_matrix, disagreements = [], [], []
-    with log_path.open("a") as fh:
-        for i, (inst, private, probs) in enumerate(computed):
-            rows.append({"y": inst.question.outcome, **probs})
-            ps = [f.probability for f in private]
-            priv_matrix.append(ps if ps else [0.5] * cell["n_agents"])
-            disagreements.append(float(np.std(ps)) if ps else 0.0)
-            fh.write(json.dumps({
-                "cell": cell["label"], "structure": cell["structure"],
-                "n_agents": cell["n_agents"], "instance": i,
-                "outcome": inst.question.outcome, "conditions": probs,
-                "disagreement": disagreements[-1],
-                "agents": [{"model": f.model, "p": f.probability, "thesis": f.thesis[:160]}
-                           for f in private],
-            }) + "\n")
+            inst, private, probs = _instance_result(swarm, cfg, inst, cfg.seed + i)
+            handle(i, inst, private, probs)
 
     ys = [r["y"] for r in rows]
     scored = {c: scoring.score_all([r[c] for r in rows], ys) for c in CONDITIONS}
