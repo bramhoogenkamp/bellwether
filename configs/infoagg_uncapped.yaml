@@ -1,0 +1,39 @@
+# Experiment 2: market-design probe. Identical to configs/infoagg.yaml except the
+# market trading policy is uncapped (full Kelly, no per-bet cap, more rounds), so a
+# near-certain agent can move the price as far as its bankroll allows. This tests
+# whether experiment 1's "market does not beat the average" is the mechanism or just
+# the capped fractional-Kelly parameters. Experiment 1 (configs/infoagg.yaml) is
+# unchanged and still reproduces.
+
+experiment_name: bellwether-infoagg
+run_name: infoagg-uncapped     # separate log + MLflow run; does not overwrite experiment 1
+seed: 0
+
+evidence:
+  source: none
+  max_items: 0
+
+swarm:
+  models:
+    - openai/gpt-5-mini
+    - anthropic/claude-sonnet-4.5
+    - google/gemini-2.5-pro
+    - deepseek/deepseek-r1
+  n_agents: 4
+  lenses: [neutral]
+  forecasts_per_agent: 1
+  temperature: 1.0
+
+market:
+  max_loss_budget: 100.0
+  kelly_fraction: 1.0          # full Kelly (experiment 1 used 0.5)
+  max_bet_fraction: 1.0        # no per-bet cap (experiment 1 capped at 0.25)
+  rounds: 5                    # more passes so an aggressive price can settle
+  starting_bankroll: 100.0
+
+calibration:
+  extremize_coef: 1.7320508
+
+questions:
+  source: synthetic
+  limit: 24

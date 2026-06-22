@@ -222,6 +222,8 @@ def main() -> None:
     ap.add_argument("--preflight", action="store_true", help="2 live instances, verbose; verify + gauge cost")
     ap.add_argument("--mlflow", action="store_true")
     ap.add_argument("--concurrency", type=int, default=8, help="instances run in parallel")
+    ap.add_argument("--cells", default=None,
+                    help="comma-separated label substrings to include (default: all cells)")
     args = ap.parse_args()
 
     cfg = BenchmarkConfig.from_yaml(args.config)
@@ -248,13 +250,18 @@ def main() -> None:
               "failed condition is confidently low, the apparatus is working. Then run the full grid.")
         return
 
-    total_calls = sum(args.n * 3 * c["n_agents"] for c in DEFAULT_GRID)
-    print(f"Grid: {len(DEFAULT_GRID)} cells x {args.n} instances. "
+    grid = DEFAULT_GRID
+    if args.cells:
+        subs = [s.strip() for s in args.cells.split(",") if s.strip()]
+        grid = [c for c in DEFAULT_GRID if any(s in c["label"] for s in subs)]
+
+    total_calls = sum(args.n * 3 * c["n_agents"] for c in grid)
+    print(f"Grid: {len(grid)} cells x {args.n} instances. "
           f"~{total_calls} model calls (private+debate+oracle), concurrency={args.concurrency}.")
     if log_path.exists():
         log_path.unlink()
 
-    results = [run_cell(c, cfg, client, args.n, log_path, args.concurrency) for c in DEFAULT_GRID]
+    results = [run_cell(c, cfg, client, args.n, log_path, args.concurrency) for c in grid]
     for r in results:
         print_cell(r)
     print_summary(results)
