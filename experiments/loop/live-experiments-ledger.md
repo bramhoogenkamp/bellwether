@@ -14,9 +14,11 @@ cells, or establish that the limit is fundamental.
 3. Rationale-augmented market: agents share a rationale, then the market trades over the updated beliefs.
    Done, iteration 2.
 4. Deliberation depth: vary the number of deliberation rounds, track how far the gap to the oracle closes.
+   Done, iteration 3.
+5. Unstructured evidence: messy natural-language slices with a known latent outcome, no deterministic combiner.
    Proposed next.
-5. Agent-framing A/B: neutral forecaster versus profit-maximizing trader.
-6. Model-mix and forced-diversity variants.
+6. Agent-framing A/B: neutral forecaster versus profit-maximizing trader.
+7. Model-mix and forced-diversity variants.
 
 ## Iterations
 
@@ -50,5 +52,19 @@ number of deliberation rounds and see how much of that gap closes (does delibera
 plateau). The agent-framing A/B moves down the queue.
 
 ### Iteration 3, deliberation depth
-Proposed. Awaiting go-ahead. Plan: run the complementary cells at one, two, and three deliberation rounds and
-track how the deliberated average and market_debate move toward the oracle as rounds increase.
+Live run, write-up in [../info-aggregation/04-deliberation-depth.md](../info-aggregation/04-deliberation-depth.md).
+Result: each deliberation round roughly halves the Brier toward the oracle, in both cells. comp-AND goes
+0.228, 0.191, 0.079, 0.034 across rounds 0 to 3 (near the oracle); comp-OR goes 0.386, 0.251, 0.138, 0.068
+(still descending). The market over deliberated beliefs tracks the deliberated average at every depth.
+Decision: depth is the lever. One round under-pools, about three rounds nearly recover the information, and
+the market adds nothing at any depth. This sharpens the contrast with HiddenBench. The mechanism question is
+now well answered on the structured task, so the next iteration should attack external validity: the
+structured task admits a deterministic combiner, so move to unstructured evidence with no clean combination
+rule (iteration 4).
+
+### Iteration 4, unstructured evidence
+Proposed. Awaiting go-ahead. Plan: synthetic instances where the outcome is still determined by latent facts
+(so there is ground truth) but each agent sees a messy natural-language description rather than a labeled
+condition, so no deterministic rule recovers the answer from the surface text. Re-run the market, average, and
+deliberation-depth comparison and check whether deliberation still recovers the answer when judgment, not
+routing, is required. This is the bridge from the lab toward the real, unstructured setting.

@@ -103,9 +103,14 @@ designs (`experiments/loop/live-experiments-ledger.md`). Findings so far, across
   is recoverable, but the price channel does not recover it
   ([01](experiments/info-aggregation/01-information-aggregation.md),
   [02](experiments/info-aggregation/02-market-design-probe.md)).
-- Give the agents a language channel (one round of shared rationales) and both the deliberated average and a
-  market over those beliefs beat the plain average significantly on every complementary structure, but they
-  tie each other ([03](experiments/info-aggregation/03-rationale-market.md)).
+- Give the agents a language channel (shared rationales) and both the deliberated average and a market over
+  those beliefs beat the plain average significantly on every complementary structure, but they tie each other
+  ([03](experiments/info-aggregation/03-rationale-market.md)).
+- Deliberation depth is the lever. Each round roughly halves the Brier toward the oracle, and about three
+  rounds nearly recover the information (comp-AND 0.228 to 0.034 across rounds), generalizing across AND and OR
+  ([04](experiments/info-aggregation/04-deliberation-depth.md)).
 
-So the channel does the aggregating, not the market mechanism: a scalar price cannot carry a decisive fact, a
-sentence can. The real-world benchmark (ForecastBench, live markets) is wired but separate from this study.
+So the channel and the depth of deliberation do the aggregating, not the market mechanism: a scalar price
+cannot carry a decisive fact, a sentence can. A caveat throughout is that this is the structured task, where a
+deterministic combiner exists; the next step is unstructured evidence with no clean rule. The real-world
+benchmark (ForecastBench, live markets) is wired but separate from this study.
