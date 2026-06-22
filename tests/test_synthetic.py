@@ -57,3 +57,20 @@ def test_aligned_private_and_debate_round():
     revised = swarm.run_debate_round(inst.question, inst.slices, priv)
     assert len(revised) == 3
     assert all(0.0 < f.probability < 1.0 for f in revised)
+
+
+def test_complementary_and_or_outcome_logic():
+    for rule, check in (("and", all), ("or", any)):
+        inst = generate_info_instances(n=40, n_agents=4, structure="complementary", seed=5, rule=rule)
+        for x in inst:
+            s = x.question.metadata["statuses"]
+            assert x.question.outcome == (1.0 if check(s) else 0.0)
+
+
+def test_complementary_threshold_is_majority():
+    inst = generate_info_instances(n=40, n_agents=5, structure="complementary", seed=6, rule="threshold")
+    for x in inst:
+        s = x.question.metadata["statuses"]
+        thr = x.question.metadata["threshold"]
+        assert thr == 3  # majority of 5
+        assert x.question.outcome == (1.0 if sum(s) >= thr else 0.0)

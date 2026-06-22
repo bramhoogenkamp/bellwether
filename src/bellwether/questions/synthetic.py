@@ -63,19 +63,39 @@ def _substitutable(i: int, n_agents: int, rng, noise: float) -> InfoInstance:
     return InfoInstance(q, slices, pooled, "substitutable", {"p_true": p_true})
 
 
-def _complementary(i: int, n_agents: int, rng, target_base_rate: float) -> InfoInstance:
-    k = n_agents
-    # P(all true) = q^k -> set q for a chosen base rate so the set isn't all-NO.
-    q = target_base_rate ** (1.0 / k)
-    letters = string.ascii_uppercase[:k]
-    statuses = [rng.random() < q for _ in range(k)]
-    outcome = 1.0 if all(statuses) else 0.0
+def _complementary(
+    i: int, n_agents: int, rng, target_base_rate: float, rule: str = "and"
+) -> InfoInstance:
+    """Hidden-profile instance. ``rule`` sets the aggregation function — the axis that
+    determines whether any single agent holds decisive information:
 
-    conditions = ", ".join(letters)
+      * "and"       — YES iff ALL conditions hold (decisive piece = a single NO)
+      * "or"        — YES iff ANY condition holds (decisive piece = a single YES)
+      * "threshold" — YES iff a majority hold (NO single agent is decisive — hardest)
+    """
+    k = n_agents
+    letters = string.ascii_uppercase[:k]
+    if rule == "and":
+        q = target_base_rate ** (1.0 / k)
+        threshold = k
+        rule_text = f"resolves YES only if ALL {k} required conditions are met"
+    elif rule == "or":
+        q = 1.0 - (1.0 - target_base_rate) ** (1.0 / k)
+        threshold = 1
+        rule_text = f"resolves YES if AT LEAST ONE of the {k} conditions is met"
+    elif rule == "threshold":
+        q = 0.5
+        threshold = k // 2 + 1
+        rule_text = f"resolves YES if AT LEAST {threshold} of the {k} conditions are met"
+    else:
+        raise ValueError(f"unknown rule {rule!r}")
+
+    statuses = [rng.random() < q for _ in range(k)]
+    outcome = 1.0 if sum(statuses) >= threshold else 0.0
+
     text = (
-        f"This resolves YES only if ALL {k} required conditions are met: {conditions}. "
-        "You have been privately told the status of only some conditions; treat the "
-        "others as unknown."
+        f"This {rule_text}: {', '.join(letters)}. You have been privately told the "
+        "status of only some conditions; treat the others as unknown."
     )
     slices, pooled = [], []
     for j in range(k):
@@ -84,14 +104,14 @@ def _complementary(i: int, n_agents: int, rng, target_base_rate: float) -> InfoI
         slices.append([item])
         pooled.append(item)
     qn = Question(
-        id=f"syn-comp-{i:04d}",
+        id=f"syn-{rule}-{i:04d}",
         text=text,
         outcome=outcome,
         source="synthetic",
-        category="complementary",
-        metadata={"statuses": statuses, "k": k, "q": q},
+        category=f"complementary-{rule}",
+        metadata={"statuses": statuses, "k": k, "rule": rule, "threshold": threshold},
     )
-    return InfoInstance(qn, slices, pooled, "complementary", {"statuses": statuses})
+    return InfoInstance(qn, slices, pooled, "complementary", {"statuses": statuses, "rule": rule})
 
 
 def generate_info_instances(
@@ -101,8 +121,13 @@ def generate_info_instances(
     seed: int = 0,
     noise: float = 0.08,
     target_base_rate: float = 0.4,
+    rule: str = "and",
 ) -> list[InfoInstance]:
-    """Generate ``n`` synthetic instances with one private slice per agent."""
+    """Generate ``n`` synthetic instances with one private slice per agent.
+
+    ``structure`` = "substitutable" | "complementary"; for complementary, ``rule`` =
+    "and" | "or" | "threshold" sets the aggregation function (the key categorization).
+    """
     if structure not in ("substitutable", "complementary"):
         raise ValueError("structure must be 'substitutable' or 'complementary'")
     rng = np.random.default_rng(seed)
@@ -111,5 +136,5 @@ def generate_info_instances(
         if structure == "substitutable":
             out.append(_substitutable(i, n_agents, rng, noise))
         else:
-            out.append(_complementary(i, n_agents, rng, target_base_rate))
+            out.append(_complementary(i, n_agents, rng, target_base_rate, rule))
     return out

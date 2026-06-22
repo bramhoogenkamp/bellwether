@@ -49,11 +49,13 @@ from bellwether.questions.synthetic import generate_info_instances  # noqa: E402
 CONDITIONS = ["single", "average", "tuned", "market", "debate", "oracle"]
 
 DEFAULT_GRID = [
-    {"structure": "complementary", "n_agents": 2, "label": "comp-k2"},
-    {"structure": "complementary", "n_agents": 3, "label": "comp-k3"},
-    {"structure": "complementary", "n_agents": 4, "label": "comp-k4"},
+    # Control: redundant signals — expect market ≈ average.
     {"structure": "substitutable", "n_agents": 4, "noise": 0.10, "label": "sub-lo"},
     {"structure": "substitutable", "n_agents": 4, "noise": 0.25, "label": "sub-hi"},
+    # The categorization that can change the result — how the information is structured:
+    {"structure": "complementary", "rule": "and", "n_agents": 4, "label": "comp-AND"},
+    {"structure": "complementary", "rule": "or", "n_agents": 4, "label": "comp-OR"},
+    {"structure": "complementary", "rule": "threshold", "n_agents": 5, "label": "comp-THRESH"},
 ]
 
 
@@ -106,7 +108,7 @@ def run_cell(cell, cfg, client, n, log_path, concurrency=8):
     swarm = _swarm_for(cfg, client, cell["n_agents"])
     instances = generate_info_instances(
         n=n, n_agents=cell["n_agents"], structure=cell["structure"],
-        seed=cfg.seed, noise=cell.get("noise", 0.08),
+        seed=cfg.seed, noise=cell.get("noise", 0.08), rule=cell.get("rule", "and"),
     )
 
     # Run instances concurrently — each is ~3*n_agents sequential model calls, so this
