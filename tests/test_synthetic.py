@@ -46,3 +46,14 @@ def test_swarm_run_private_gives_each_agent_its_own_slice():
     assert len(forecasts) == 4
     # different private slices -> different parsed beliefs (not clones)
     assert len({round(f.probability, 3) for f in forecasts}) > 1
+
+
+def test_aligned_private_and_debate_round():
+    inst = generate_info_instances(n=1, n_agents=3, structure="substitutable", seed=0)[0]
+    cfg = SwarmConfig(models=["m1", "m2", "m3"], n_agents=3, lenses=[Lens.neutral])
+    swarm = Swarm(cfg, get_client("fake"))
+    priv = swarm.forecast_each_private(inst.question, inst.slices)
+    assert len(priv) == 3  # aligned: exactly one per agent
+    revised = swarm.run_debate_round(inst.question, inst.slices, priv)
+    assert len(revised) == 3
+    assert all(0.0 < f.probability < 1.0 for f in revised)

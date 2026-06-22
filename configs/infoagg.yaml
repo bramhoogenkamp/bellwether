@@ -1,0 +1,38 @@
+# Information-aggregation experiment config (scripts/run_infoagg.py).
+# Four strong, cross-family REASONING models — the experiment hinges on agents being
+# able to reason about conjunctions/hidden profiles (so the oracle is a real upper
+# bound) and on genuine, decorrelated diversity (so the market has something to do).
+# n_agents is overridden per grid cell (= number of conditions for complementary).
+
+experiment_name: bellwether-infoagg
+run_name: infoagg
+seed: 0
+
+evidence:
+  source: none        # the experiment supplies synthetic private slices directly
+  max_items: 0
+
+swarm:
+  models:
+    - openai/gpt-5-mini
+    - anthropic/claude-sonnet-4.5
+    - google/gemini-2.5-pro
+    - deepseek/deepseek-r1
+  n_agents: 4          # overridden per cell
+  lenses: [neutral]    # keep lens fixed; diversity comes from the 4 model families
+  forecasts_per_agent: 1
+  temperature: 1.0     # safe across reasoning models (some require default temperature)
+
+market:
+  max_loss_budget: 100.0
+  kelly_fraction: 0.5
+  max_bet_fraction: 0.25
+  rounds: 3            # a few passes so the price settles to the stake-weighted consensus
+  starting_bankroll: 100.0
+
+calibration:
+  extremize_coef: 1.7320508   # sqrt(3) — used by the 'tuned' aggregator (hard baseline)
+
+questions:
+  source: synthetic
+  limit: 20

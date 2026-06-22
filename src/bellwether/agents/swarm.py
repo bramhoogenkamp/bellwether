@@ -53,8 +53,8 @@ class Swarm:
     def run_private(self, question: Question, slices: list[list[EvidenceItem]]) -> list[Forecast]:
         """Dispersed-private-information mode: agent i sees ONLY ``slices[i]``.
 
-        Used by the information-aggregation experiment — each agent forecasts from its
-        own private slice of the evidence, then the market (or average) must aggregate.
+        Failed agents are skipped (length may be < n_agents). For experiments that need
+        one forecast per agent (aligned), use ``forecast_each_private``.
         """
         forecasts: list[Forecast] = []
         for i, agent in enumerate(self.agents):
@@ -67,3 +67,43 @@ class Swarm:
                     file=sys.stderr,
                 )
         return forecasts
+
+    def _private_evidence(self, slices, i):
+        return slices[i % len(slices)] if slices else []
+
+    def forecast_each_private(
+        self, question: Question, slices: list[list[EvidenceItem]]
+    ) -> list[Forecast]:
+        """One forecast per agent, aligned to agents (0.5 fallback on failure)."""
+        out: list[Forecast] = []
+        for i, agent in enumerate(self.agents):
+            try:
+                out.append(agent.forecast(question, self._private_evidence(slices, i)))
+            except Exception as exc:
+                print(f"[swarm] {agent.model}/{agent.lens.value} failed: {exc}", file=sys.stderr)
+                out.append(
+                    Forecast(probability=0.5, confidence=0.3, thesis="(failed)",
+                             model=agent.model, lens=agent.lens.value)
+                )
+        return out
+
+    def run_debate_round(
+        self, question: Question, slices: list[list[EvidenceItem]], prior: list[Forecast]
+    ) -> list[Forecast]:
+        """One deliberation round: each agent revises after seeing peers' forecasts +
+        theses (its private slice still attached). The comparator for 'does a market
+        beat mere talk?' — peers' theses carry their private information, as in debate.
+        """
+        revised: list[Forecast] = []
+        for i, agent in enumerate(self.agents):
+            peers = [
+                EvidenceItem(text=f"Another forecaster says p={f.probability:.2f}: {f.thesis}",
+                             source="peer")
+                for j, f in enumerate(prior) if j != i
+            ]
+            evidence = self._private_evidence(slices, i) + peers
+            try:
+                revised.append(agent.forecast(question, evidence))
+            except Exception:
+                revised.append(prior[i])
+        return revised
