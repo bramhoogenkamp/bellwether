@@ -91,19 +91,45 @@ def _mean_pairwise_error_corr(priv_matrix, ys):
     return float(np.mean(corrs)) if corrs else float("nan")
 
 
-def run_cell(cell, cfg, client, n, log_path):
+def _instance_result(swarm, cfg, inst, seed):
+    """Compute all conditions for one instance. Self-contained + thread-safe (the
+    swarm/agents/client are stateless per call), so instances run concurrently."""
+    try:
+        private, probs = _conditions_for_instance(swarm, cfg, inst, seed)
+    except Exception as exc:  # one bad instance shouldn't kill the cell
+        print(f"[infoagg] instance failed: {exc}", file=sys.stderr)
+        private, probs = [], {c: 0.5 for c in CONDITIONS}
+    return inst, private, probs
+
+
+def run_cell(cell, cfg, client, n, log_path, concurrency=8):
     swarm = _swarm_for(cfg, client, cell["n_agents"])
     instances = generate_info_instances(
         n=n, n_agents=cell["n_agents"], structure=cell["structure"],
         seed=cfg.seed, noise=cell.get("noise", 0.08),
     )
+
+    # Run instances concurrently — each is ~3*n_agents sequential model calls, so this
+    # is where the wall-clock savings live. Results re-ordered by index afterward.
+    computed = [None] * len(instances)
+    if concurrency > 1 and len(instances) > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=concurrency) as ex:
+            futs = {ex.submit(_instance_result, swarm, cfg, inst, cfg.seed + i): i
+                    for i, inst in enumerate(instances)}
+            for fut in as_completed(futs):
+                computed[futs[fut]] = fut.result()
+    else:
+        for i, inst in enumerate(instances):
+            computed[i] = _instance_result(swarm, cfg, inst, cfg.seed + i)
+
     rows, priv_matrix, disagreements = [], [], []
-    for i, inst in enumerate(instances):
-        private, probs = _conditions_for_instance(swarm, cfg, inst, cfg.seed + i)
-        rows.append({"y": inst.question.outcome, **probs})
-        priv_matrix.append([f.probability for f in private])
-        disagreements.append(float(np.std([f.probability for f in private])))
-        with log_path.open("a") as fh:
+    with log_path.open("a") as fh:
+        for i, (inst, private, probs) in enumerate(computed):
+            rows.append({"y": inst.question.outcome, **probs})
+            ps = [f.probability for f in private]
+            priv_matrix.append(ps if ps else [0.5] * cell["n_agents"])
+            disagreements.append(float(np.std(ps)) if ps else 0.0)
             fh.write(json.dumps({
                 "cell": cell["label"], "structure": cell["structure"],
                 "n_agents": cell["n_agents"], "instance": i,
@@ -185,6 +211,7 @@ def main() -> None:
     ap.add_argument("--live", action="store_true", help="real models (default FakeLLM offline)")
     ap.add_argument("--preflight", action="store_true", help="2 live instances, verbose; verify + gauge cost")
     ap.add_argument("--mlflow", action="store_true")
+    ap.add_argument("--concurrency", type=int, default=8, help="instances run in parallel")
     args = ap.parse_args()
 
     cfg = BenchmarkConfig.from_yaml(args.config)
@@ -213,11 +240,11 @@ def main() -> None:
 
     total_calls = sum(args.n * 3 * c["n_agents"] for c in DEFAULT_GRID)
     print(f"Grid: {len(DEFAULT_GRID)} cells x {args.n} instances. "
-          f"~{total_calls} model calls (private+debate+oracle).")
+          f"~{total_calls} model calls (private+debate+oracle), concurrency={args.concurrency}.")
     if log_path.exists():
         log_path.unlink()
 
-    results = [run_cell(c, cfg, client, args.n, log_path) for c in DEFAULT_GRID]
+    results = [run_cell(c, cfg, client, args.n, log_path, args.concurrency) for c in DEFAULT_GRID]
     for r in results:
         print_cell(r)
     print_summary(results)
