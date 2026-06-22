@@ -17,8 +17,9 @@ cells, or establish that the limit is fundamental.
    Done, iteration 3.
 5. Unstructured evidence: messy natural-language slices with a known latent outcome, no deterministic combiner.
    Done, iteration 4.
-6. Real-data forward test (outside the synthetic lab) and agent-framing A/B. Proposed, not yet run.
-7. Model-mix and forced-diversity variants.
+6. Agent-framing A/B: neutral forecaster versus profit-maximizing trader. Done, iteration 5.
+7. Real-data forward test (outside the synthetic lab). Proposed, not yet run.
+8. Model-mix and forced-diversity variants. Proposed, not yet run.
 
 ## Iterations
 
@@ -73,3 +74,13 @@ shifts the bottleneck from transmission to interpretation, so deliberation is us
 limit becomes how well the models read the evidence. This is the realistic regime. Natural next steps now move
 outside the synthetic lab: a real-data forward test, and the agent-framing A/B. Pausing the synthetic loop here
 is reasonable.
+
+### Iteration 5, agent-framing A/B
+Live run, write-up in [../info-aggregation/06-agent-framing.md](../info-aggregation/06-agent-framing.md).
+Result: framing agents as profit-maximizing traders did not help and trended worse (comp-OR average +0.031,
+slightly worse ECE on both cells), consistent in direction but not significant at n=24. The market tracked the
+average under both framings.
+Decision: keep agents as neutral honest forecasters; the trader framing buys overconfidence without accuracy.
+The synthetic loop has now answered the mechanism, channel, depth, structure, and framing questions, so it is
+a natural stopping point. The two remaining queue items both leave the lab: a real-data forward test, and a
+model-mix/diversity sweep.
