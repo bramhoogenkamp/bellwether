@@ -82,13 +82,48 @@ def expected_calibration_error(probs, outcomes, n_bins: int = 10) -> float:
 
 def score_all(probs, outcomes, reference=None) -> dict:
     """Bundle the standard metrics into one dict (logged to MLflow as metrics)."""
+    m = murphy_decomposition(probs, outcomes)
     return {
         "brier": brier_score(probs, outcomes),
         "bss": brier_skill_score(probs, outcomes, reference),
         "log_loss": log_loss(probs, outcomes),
         "ece": expected_calibration_error(probs, outcomes),
+        "reliability": m["reliability"],
+        "resolution": m["resolution"],
         "n": int(len(outcomes)),
         "base_rate": float(np.mean(outcomes)),
+    }
+
+
+def murphy_decomposition(probs, outcomes, n_bins: int = 10) -> dict:
+    """Decompose Brier = Reliability - Resolution + Uncertainty (Murphy 1973).
+
+    reliability  (lower better; 0 = perfectly calibrated): calibration error.
+    resolution   (higher better): how much outcome frequency varies across forecast
+                 bins — the ability to discriminate yes-cases from no-cases.
+    uncertainty  (fixed by the data): base_rate * (1 - base_rate).
+    A forecast only adds value when resolution > reliability.
+    """
+    p = np.asarray(probs, dtype=float)
+    y = np.asarray(outcomes, dtype=float)
+    n = len(y)
+    base = float(y.mean())
+    bins = np.linspace(0.0, 1.0, n_bins + 1)
+    idx = np.clip(np.digitize(p, bins) - 1, 0, n_bins - 1)
+    reliability = resolution = 0.0
+    for b in range(n_bins):
+        mask = idx == b
+        nb = int(mask.sum())
+        if nb == 0:
+            continue
+        p_bar = float(p[mask].mean())
+        y_bar = float(y[mask].mean())
+        reliability += nb * (p_bar - y_bar) ** 2
+        resolution += nb * (y_bar - base) ** 2
+    return {
+        "reliability": reliability / n,
+        "resolution": resolution / n,
+        "uncertainty": base * (1 - base),
     }
 
 

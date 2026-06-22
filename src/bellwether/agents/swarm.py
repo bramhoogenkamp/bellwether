@@ -49,3 +49,21 @@ class Swarm:
                         file=sys.stderr,
                     )
         return forecasts
+
+    def run_private(self, question: Question, slices: list[list[EvidenceItem]]) -> list[Forecast]:
+        """Dispersed-private-information mode: agent i sees ONLY ``slices[i]``.
+
+        Used by the information-aggregation experiment — each agent forecasts from its
+        own private slice of the evidence, then the market (or average) must aggregate.
+        """
+        forecasts: list[Forecast] = []
+        for i, agent in enumerate(self.agents):
+            evidence = slices[i % len(slices)] if slices else []
+            try:
+                forecasts.append(agent.forecast(question, evidence))
+            except Exception as exc:
+                print(
+                    f"[swarm] {agent.model}/{agent.lens.value} failed: {exc}",
+                    file=sys.stderr,
+                )
+        return forecasts

@@ -2,6 +2,18 @@
 
 *An agent-driven prediction market: AI agents trade an internal market whose price is a live probability.*
 
+## Research direction (the novel question)
+
+> **Can a market of LLM agents aggregate *dispersed private information* — reconstructing the
+> full-information forecast from agents who each see only a slice — better than simply averaging them, and
+> under what signal-structure conditions?**
+
+This is the Hayek/rational-expectations rationale for markets, applied to LLM agents, and it's genuinely open:
+the closest predecessor (Galanis 2026) measures market-vs-*truth*, never market-vs-*averaging*-vs-*oracle*.
+Full scientific framing + citations: **[`research/intro.md`](research/intro.md)** · references:
+[`research/references.md`](research/references.md). We also benchmark on the public **ForecastBench** and
+live markets (Polymarket/Manifold) to ground it.
+
 
 An exploration into a **company-run, internal prediction market populated and traded solely by AI agents** —
 where you define an event, spin up agents, they take positions, and the market's trading price is the

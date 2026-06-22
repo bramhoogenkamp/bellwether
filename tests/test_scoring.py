@@ -2,6 +2,7 @@
 
 import math
 
+import numpy as np
 import pytest
 
 from bellwether.scoring import (
@@ -9,6 +10,7 @@ from bellwether.scoring import (
     brier_skill_score,
     expected_calibration_error,
     log_loss,
+    murphy_decomposition,
     paired_bootstrap_brier_delta,
     score_all,
 )
@@ -46,8 +48,22 @@ def test_ece_zero_when_perfectly_calibrated():
 
 def test_score_all_keys():
     s = score_all([0.6, 0.4, 0.7], [1, 0, 1])
-    assert set(s) == {"brier", "bss", "log_loss", "ece", "n", "base_rate"}
+    assert set(s) == {
+        "brier", "bss", "log_loss", "ece", "reliability", "resolution", "n", "base_rate"
+    }
     assert s["n"] == 3
+
+
+def test_murphy_decomposition_identity():
+    # With discrete forecasts (one value per bin) the identity is exact:
+    # Brier = reliability - resolution + uncertainty.
+    rng = np.random.default_rng(0)
+    p = rng.choice([0.1, 0.3, 0.5, 0.7, 0.9], size=2000)
+    y = (rng.uniform(0, 1, size=2000) < p).astype(float)
+    m = murphy_decomposition(p, y, n_bins=10)
+    recon = m["reliability"] - m["resolution"] + m["uncertainty"]
+    assert abs(recon - brier_score(p, y)) < 1e-9
+    assert m["uncertainty"] > 0
 
 
 def test_paired_bootstrap_detects_better_forecaster():
