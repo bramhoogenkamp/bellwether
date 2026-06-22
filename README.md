@@ -95,11 +95,17 @@ Design rationale and the literature behind each choice: [`research/intro.md`](re
 ## Status
 
 The apparatus is built and tested (68 tests). The information-aggregation study has run live across all five
-cells (gpt-5-mini, claude-sonnet-4.5, gemini-2.5-pro, deepseek-r1). First result, written up in
-[`experiments/info-aggregation/01-information-aggregation.md`](experiments/info-aggregation/01-information-aggregation.md):
-the market never beats a plain average, on redundant or complementary information. The information is fully
-recoverable (the oracle is near-perfect on the complementary cells), but only deliberation pools it, because a
-price is a single scalar and cannot carry a decisive fact while a sentence can. A follow-up probe
-([`02-market-design-probe.md`](experiments/info-aggregation/02-market-design-probe.md)) tests whether that was
-the mechanism or the capped trading parameters. The real-world benchmark is wired (ForecastBench scoring and a
-live-market forward-test).
+cells (gpt-5-mini, claude-sonnet-4.5, gemini-2.5-pro, deepseek-r1), and runs as a checkpointed loop over market
+designs (`experiments/loop/live-experiments-ledger.md`). Findings so far, across three iterations:
+
+- A market over the agents' private probabilities never beats a plain average on complementary information,
+  whether capped, uncapped, or the closed-form equilibrium pool. The oracle is near-perfect, so the information
+  is recoverable, but the price channel does not recover it
+  ([01](experiments/info-aggregation/01-information-aggregation.md),
+  [02](experiments/info-aggregation/02-market-design-probe.md)).
+- Give the agents a language channel (one round of shared rationales) and both the deliberated average and a
+  market over those beliefs beat the plain average significantly on every complementary structure, but they
+  tie each other ([03](experiments/info-aggregation/03-rationale-market.md)).
+
+So the channel does the aggregating, not the market mechanism: a scalar price cannot carry a decisive fact, a
+sentence can. The real-world benchmark (ForecastBench, live markets) is wired but separate from this study.

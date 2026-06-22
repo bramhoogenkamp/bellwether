@@ -11,10 +11,12 @@ cells, or establish that the limit is fundamental.
 
 1. Baseline market (capped fractional-Kelly). Done, iteration 0.
 2. Uncapped market (full Kelly, no cap). Done, iteration 1.
-3. Rationale-augmented market: agents share a one-line rationale, then the market trades over the updated
-   beliefs. Direct test of the bandwidth explanation. Proposed next.
-4. Agent-framing A/B: neutral forecaster versus profit-maximizing trader.
-5. Model-mix and forced-diversity variants.
+3. Rationale-augmented market: agents share a rationale, then the market trades over the updated beliefs.
+   Done, iteration 2.
+4. Deliberation depth: vary the number of deliberation rounds, track how far the gap to the oracle closes.
+   Proposed next.
+5. Agent-framing A/B: neutral forecaster versus profit-maximizing trader.
+6. Model-mix and forced-diversity variants.
 
 ## Iterations
 
@@ -35,7 +37,18 @@ fundamental. Next, test the bandwidth explanation directly by giving the market 
 (iteration 2).
 
 ### Iteration 2, rationale-augmented market
-Proposed. Awaiting go-ahead at the checkpoint. Plan: run one deliberation round so each agent's decisive fact
-can enter the others' beliefs through a rationale, then run the market over those updated beliefs, and compare
-the market price to the deliberated average, the plain average, and the oracle. If the market now moves toward
-the oracle, it confirms that the earlier failure was the scalar-price channel, not the mechanism.
+Live run, write-up in [../info-aggregation/03-rationale-market.md](../info-aggregation/03-rationale-market.md).
+(The first attempt hung on a call with no timeout; fixed the timeout and reran clean.)
+Result: across all three complementary cells, the market over post-deliberation beliefs beats the plain
+average significantly (md vs avg: AND -0.047, OR -0.155, THRESH -0.038), ties the deliberated average, and the
+market over private beliefs still ties the plain average.
+Decision: the earlier failure was the channel, not the mechanism, confirmed across AND, OR, and threshold. A
+language channel lets the decisive fact into the beliefs, and then averaging or a market over those beliefs
+both work. The market still adds nothing beyond the deliberated average. A gap to the oracle remains.
+Next: a gap to the oracle is still open after one deliberation round, so propose iteration 3 to vary the
+number of deliberation rounds and see how much of that gap closes (does deliberation approach the oracle, or
+plateau). The agent-framing A/B moves down the queue.
+
+### Iteration 3, deliberation depth
+Proposed. Awaiting go-ahead. Plan: run the complementary cells at one, two, and three deliberation rounds and
+track how the deliberated average and market_debate move toward the oracle as rounds increase.
