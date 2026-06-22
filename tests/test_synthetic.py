@@ -67,6 +67,17 @@ def test_complementary_and_or_outcome_logic():
             assert x.question.outcome == (1.0 if check(s) else 0.0)
 
 
+def test_unstructured_outcome_matches_latent_states_and_slices_are_prose():
+    inst = generate_info_instances(n=30, n_agents=4, structure="unstructured", seed=7, rule="and")
+    for x in inst:
+        s = x.question.metadata["statuses"]
+        assert x.question.outcome == (1.0 if all(s) else 0.0)
+        assert len(x.slices) == 4
+        # slices are prose, not labeled fields: a sentence with several words, no "COMPLETE" label
+        text = x.slices[0][0].text
+        assert len(text.split()) >= 6 and "COMPLETE" not in text
+
+
 def test_complementary_threshold_is_majority():
     inst = generate_info_instances(n=40, n_agents=5, structure="complementary", seed=6, rule="threshold")
     for x in inst:

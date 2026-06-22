@@ -114,6 +114,70 @@ def _complementary(
     return InfoInstance(qn, slices, pooled, "complementary", {"statuses": statuses, "rule": rule})
 
 
+# Unstructured variant: each condition's latent state is rendered as a messy
+# natural-language snippet that implies "ready" or "not ready" indirectly, so the
+# agent must interpret prose rather than read a labeled field. The latent states still
+# determine the outcome via the rule, so ground truth and the oracle are preserved.
+_COMPONENTS = [
+    "the payments service", "the checkout flow", "the data pipeline",
+    "the auth migration", "the onboarding redesign", "the search index", "the billing module",
+]
+_READY = [
+    "Heard from the {c} team in standup, they wrapped it up and QA signed off.",
+    "{c} shipped to production last week and has been stable since.",
+    "Caught the {c} lead at lunch, she said it is finished and running clean.",
+    "Saw the release notes, {c} made it in and the smoke tests passed.",
+]
+_NOT_READY = [
+    "{c} is still blocked on a dependency and got pushed to next sprint.",
+    "There was a thread about {c}; it is only half built and the owner is out sick.",
+    "{c} failed its last review, so the team is reworking a big chunk of it.",
+    "Heard {c} is behind; the demo last week did not work.",
+]
+
+
+def _unstructured(i: int, n_agents: int, rng, target_base_rate: float, rule: str = "and") -> InfoInstance:
+    k = n_agents
+    comps = list(rng.choice(_COMPONENTS, size=k, replace=False))
+    if rule == "and":
+        q = target_base_rate ** (1.0 / k)
+        threshold = k
+        rule_text = f"ships only if ALL {k} of these are production-ready"
+    elif rule == "or":
+        q = 1.0 - (1.0 - target_base_rate) ** (1.0 / k)
+        threshold = 1
+        rule_text = "ships if AT LEAST ONE of these is production-ready"
+    elif rule == "threshold":
+        q = 0.5
+        threshold = k // 2 + 1
+        rule_text = f"ships if at least {threshold} of these are production-ready"
+    else:
+        raise ValueError(f"unknown rule {rule!r}")
+
+    statuses = [rng.random() < q for _ in range(k)]
+    outcome = 1.0 if sum(statuses) >= threshold else 0.0
+    text = (
+        f"A launch {rule_text}: {', '.join(comps)}. You have each heard about some of them "
+        "through different channels; judge from what you heard."
+    )
+    slices, pooled = [], []
+    for j in range(k):
+        pool = _READY if statuses[j] else _NOT_READY
+        snippet = pool[int(rng.integers(len(pool)))].format(c=comps[j])
+        item = EvidenceItem(text=snippet, source="hearsay")
+        slices.append([item])
+        pooled.append(item)
+    qn = Question(
+        id=f"syn-unstr-{rule}-{i:04d}",
+        text=text,
+        outcome=outcome,
+        source="synthetic",
+        category=f"unstructured-{rule}",
+        metadata={"statuses": statuses, "k": k, "rule": rule, "threshold": threshold, "components": comps},
+    )
+    return InfoInstance(qn, slices, pooled, "unstructured", {"statuses": statuses, "rule": rule})
+
+
 def generate_info_instances(
     n: int = 50,
     n_agents: int = 4,
@@ -128,13 +192,15 @@ def generate_info_instances(
     ``structure`` = "substitutable" | "complementary"; for complementary, ``rule`` =
     "and" | "or" | "threshold" sets the aggregation function (the key categorization).
     """
-    if structure not in ("substitutable", "complementary"):
-        raise ValueError("structure must be 'substitutable' or 'complementary'")
+    if structure not in ("substitutable", "complementary", "unstructured"):
+        raise ValueError("structure must be 'substitutable', 'complementary', or 'unstructured'")
     rng = np.random.default_rng(seed)
     out = []
     for i in range(n):
         if structure == "substitutable":
             out.append(_substitutable(i, n_agents, rng, noise))
+        elif structure == "unstructured":
+            out.append(_unstructured(i, n_agents, rng, target_base_rate, rule))
         else:
             out.append(_complementary(i, n_agents, rng, target_base_rate, rule))
     return out

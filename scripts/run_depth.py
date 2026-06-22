@@ -37,6 +37,9 @@ GRID = {  # label -> (structure, n_agents, rule)
     "comp-AND": ("complementary", 4, "and"),
     "comp-OR": ("complementary", 4, "or"),
     "comp-THRESH": ("complementary", 5, "threshold"),
+    "unstr-AND": ("unstructured", 4, "and"),
+    "unstr-OR": ("unstructured", 4, "or"),
+    "unstr-THRESH": ("unstructured", 5, "threshold"),
 }
 
 
