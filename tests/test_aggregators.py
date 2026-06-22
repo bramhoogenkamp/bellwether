@@ -49,6 +49,15 @@ def test_market_stays_neutral_at_consensus_half():
     assert price == pytest.approx(0.5, abs=1e-6)  # no edge -> no trades
 
 
+def test_market_converges_to_agreeing_consensus_even_when_extreme():
+    # Agents agreeing on a low (or high) probability: seeding at the consensus means
+    # the market lands near it, instead of getting stuck toward 0.5.
+    low = market_price([_fc(0.08)] * 6, MarketConfig(), seed=0)
+    high = market_price([_fc(0.90)] * 6, MarketConfig(), seed=0)
+    assert low == pytest.approx(0.08, abs=0.04)
+    assert high == pytest.approx(0.90, abs=0.04)
+
+
 def test_single_llm_is_first_forecast():
     assert single_llm([_fc(0.42), _fc(0.9)]) == 0.42
 

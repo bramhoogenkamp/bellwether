@@ -13,6 +13,8 @@ their view — not just an unweighted vote.
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
 from ..config import MarketConfig
@@ -25,7 +27,16 @@ def market_price(forecasts, cfg: MarketConfig, seed: int = 0) -> float:
         return 0.5
 
     b = liquidity_from_budget(cfg.max_loss_budget, n_outcomes=2)
-    market = LMSRMarket(n_outcomes=2, b=b)
+
+    # Seed the market at the agents' consensus (their mean belief) rather than 0.5.
+    # Starting at 0.5 biases the result toward the middle: with capped, finite-bankroll
+    # trading the price can't always travel far enough to reach a strong consensus
+    # (badly so on extreme-probability questions). Seeding at the prior lets trading
+    # *refine* the consensus via confidence/stake-weighting instead of crawling to it.
+    prior = float(np.clip(np.mean([f.probability for f in forecasts]), 1e-4, 1 - 1e-4))
+    q0 = np.array([b * math.log(prior), b * math.log(1 - prior)])
+    market = LMSRMarket(n_outcomes=2, b=b, q=q0)
+
     bankrolls = [float(cfg.starting_bankroll)] * len(forecasts)
     rng = np.random.default_rng(seed)
 

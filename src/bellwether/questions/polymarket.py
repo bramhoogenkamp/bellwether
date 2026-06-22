@@ -30,6 +30,15 @@ def _epoch_to_date(ts: int) -> date:
     return datetime.fromtimestamp(ts, tz=timezone.utc).date()
 
 
+def _parse_iso(s) -> date | None:
+    if not s:
+        return None
+    try:
+        return date.fromisoformat(str(s)[:10])
+    except ValueError:
+        return None
+
+
 class PolymarketQuestionSource:
     def __init__(
         self,
@@ -110,3 +119,54 @@ class PolymarketQuestionSource:
             market_prob=market_prob,
             metadata={"slug": m.get("slug", "")},
         )
+
+    def fetch_open(self, limit: int = 10) -> list[Question]:
+        """Currently-OPEN binary markets (outcome unknown -> honest forward-test).
+
+        ``market_prob`` is the live YES price (the crowd's current probability), and
+        ``outcome`` is None until the market resolves. Use this with web retrieval:
+        there is no answer to leak because the event hasn't happened yet.
+        """
+        import httpx
+
+        out: list[Question] = []
+        today = datetime.now(timezone.utc).date()
+        with httpx.Client(timeout=self.timeout) as client:
+            resp = client.get(
+                _GAMMA,
+                params={
+                    "closed": "false",
+                    "active": "true",
+                    "order": "volumeNum",
+                    "ascending": "false",
+                    "limit": self.scan_limit,
+                },
+            )
+            resp.raise_for_status()
+            for m in resp.json():
+                if len(out) >= limit:
+                    break
+                if m.get("outcomes") != '["Yes", "No"]':
+                    continue
+                if (m.get("volumeNum") or 0) < self.min_volume:
+                    continue
+                try:
+                    yes = float(json.loads(m["outcomePrices"])[0])
+                except (json.JSONDecodeError, KeyError, IndexError, ValueError, TypeError):
+                    continue
+                if not (0.05 < yes < 0.95):
+                    continue  # skip near-settled / dead markets -> keep genuinely uncertain ones
+                out.append(
+                    Question(
+                        id=f"poly-open-{m.get('id', '')}",
+                        text=m.get("question", ""),
+                        issue_date=today,
+                        resolution_date=_parse_iso(m.get("endDate")),
+                        outcome=None,
+                        category="polymarket-open",
+                        source="polymarket",
+                        market_prob=yes,
+                        metadata={"slug": m.get("slug", "")},
+                    )
+                )
+        return out

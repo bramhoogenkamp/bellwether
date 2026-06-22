@@ -1,0 +1,39 @@
+# "Try to be good" config: strong cross-family reasoning models + web research,
+# forecasting OPEN markets (honest forward-test). Used by scripts/forecast_open.py.
+#
+# Each of the 3 models is paired with both lenses -> 6 distinct, diverse agents.
+# Web research (one :online call per question) gives them real, current information.
+
+experiment_name: agent-market
+run_name: open-forward-test
+conditions: [A, B, C, D, E, M]
+seed: 0
+
+evidence:
+  source: web        # OpenRouter :online research pass
+  max_items: 6
+
+swarm:
+  models:
+    - openai/gpt-5-mini
+    - anthropic/claude-sonnet-4.5
+    - google/gemini-2.5-pro
+  n_agents: 6
+  lenses: [base_rate, inside_view]
+  forecasts_per_agent: 1
+  temperature: 1.0   # safe across reasoning models (some require default temperature)
+
+market:
+  max_loss_budget: 100.0
+  kelly_fraction: 0.5
+  max_bet_fraction: 0.25
+  rounds: 2
+  starting_bankroll: 100.0
+
+calibration:
+  extremize_coef: 1.0  # extremizing OFF — strong reasoning models are often already confident
+
+questions:
+  source: polymarket
+  limit: 5
+  leakage_guard: true
