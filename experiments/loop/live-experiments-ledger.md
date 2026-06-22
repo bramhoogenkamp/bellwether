@@ -19,7 +19,7 @@ cells, or establish that the limit is fundamental.
    Done, iteration 4.
 6. Agent-framing A/B: neutral forecaster versus profit-maximizing trader. Done, iteration 5.
 7. Model-mix and diversity sweep. Done, iteration 6.
-8. Real-data forward test (outside the synthetic lab). Proposed, not yet run.
+8. Real-data forward test (outside the synthetic lab). Forecasting pass done, iteration 7; Brier pending resolution.
 
 ## Iterations
 
@@ -94,3 +94,17 @@ Decision: diversity is what makes deliberation work. A swarm of clones has littl
 deliberation stalls; mixing model families is what gives deliberation something to work with. The near-clone
 concern is real and effective diversity is a genuine ceiling. The synthetic loop is now complete; the only
 remaining queue item leaves the lab (a real-data forward test).
+
+### Iteration 7, real-data forward test
+Live run, `scripts/run_forward.py`. Forecast 40 open Polymarket questions resolving within 7 days, with
+web-researched odds-stripped evidence partitioned across the diverse swarm, then deliberation. Scored with
+`scripts/score_forward.py`, which excludes questions whose evidence leaked an external forecast probability.
+Status: forecasting pass done; the set is almost entirely World Cup matches; 7 of 40 excluded for forecast
+leakage (Opta-style group-progression probabilities, ~18 percent). Distance-to-crowd on the clean 33: single
+0.152, average 0.128, market 0.124, deliberated 0.142. So aggregation beats a single read but deliberation
+does not beat plain averaging on these sports questions, consistent with the diversity finding. Brier against
+actual outcomes is pending resolution (by 2026-06-27); rerun score_forward.py then, preferring the future-
+resolving (leak-safe) subset.
+Decision: distance-to-crowd is not accuracy, so the real verdict waits for resolution. The sports-heavy set is
+a weak showcase for the dispersed-information finding, which is itself a finding: short-horizon liquid markets
+do not contain much dispersed analyzable evidence.
