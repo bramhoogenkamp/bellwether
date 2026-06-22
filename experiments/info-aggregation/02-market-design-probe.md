@@ -56,5 +56,21 @@ python scripts/run_infoagg.py --config configs/infoagg_uncapped.yaml --cells com
 
 ## Results
 
-Pending. To be filled in from the run, alongside the experiment 1 numbers for direct comparison:
-market Brier per complementary cell, market minus average, market minus debate, and gap to the oracle.
+Uncapped market, 24 instances per cell.
+
+| cell | average | market (uncapped) | debate | oracle | market - average |
+|---|---|---|---|---|---|
+| comp-AND | 0.228 | 0.233 | 0.193 | 0.000 | +0.004 [+0.003, +0.006], significant (worse) |
+| comp-OR | 0.401 | 0.392 | 0.260 | 0.001 | -0.009 [-0.021, +0.005], not significant |
+| comp-THRESH | 0.193 | 0.187 | 0.167 | 0.001 | -0.005 [-0.014, +0.003], not significant |
+
+Conclusion: removing the cap did not rescue the market. On comp-AND it is significantly, though tinily, worse
+than the average; on comp-OR and comp-THRESH it is marginally better but not significant. The market still does
+not beat the average on any complementary cell, still sits far from the oracle, and still trails debate. So
+experiment 1's failure was not the capped parameters. Within the simulated-trading family the limit looks
+fundamental, and the replay loop found the same for the closed-form equilibrium pool: no market design over the
+agents' scalar beliefs recovers the complementary information.
+
+Caveat: this is a separate live run, so the underlying beliefs differ from experiment 1 (for example the
+comp-OR average is 0.401 here versus 0.386 in experiment 1). The valid comparison is market versus average
+within this run, not market here versus market in experiment 1.
