@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -37,6 +38,16 @@ from bellwether.evidence.web import WebEvidenceSource  # noqa: E402
 from bellwether.questions.polymarket import PolymarketQuestionSource  # noqa: E402
 
 
+# Filter out sports and crypto-price questions, which dominate short horizons but carry
+# little dispersed analyzable evidence. Keeps politics, policy, geopolitics, tech, etc.
+_SPORT = re.compile(
+    r"\bwin on \d|win group|\bvs\.?\b|exact score|both teams|to score|knockout|advance|"
+    r"FIFA|World Cup|NBA|NFL|UFC|relegat|premier league|super bowl|playoff|grand prix",
+    re.I,
+)
+_CRYPTO = re.compile(r"bitcoin|ethereum|\bbtc\b|\beth\b|solana|dogecoin|crypto|hit \$|all-time high", re.I)
+
+
 def partition(evidence, n):
     """Round-robin the evidence into n slices, one per agent (dispersed information)."""
     return [evidence[i::n] for i in range(n)]
@@ -50,6 +61,8 @@ def main() -> None:
     ap.add_argument("--rounds", type=int, default=2, help="deliberation rounds")
     ap.add_argument("--research-model", default="openai/gpt-4o-mini:online")
     ap.add_argument("--allow-odds", action="store_true")
+    ap.add_argument("--non-sports", action="store_true", help="drop sports/crypto-price questions")
+    ap.add_argument("--out", default="data/forecasts_forward.jsonl", help="log file (use a distinct one to keep prior runs)")
     ap.add_argument("--concurrency", type=int, default=6)
     ap.add_argument("--live", action="store_true")
     args = ap.parse_args()
@@ -63,14 +76,18 @@ def main() -> None:
     cutoff = (datetime.now(timezone.utc).date() + timedelta(days=args.max_days))
     print(f"Fetching open Polymarket markets resolving on/before {cutoff} "
           f"(odds {'ALLOWED' if args.allow_odds else 'STRIPPED'})...")
-    questions = PolymarketQuestionSource(scan_limit=500).fetch_open_within(days=args.max_days, limit=args.limit)
-    print(f"{len(questions)} open markets resolve within {args.max_days} days. "
+    pool = PolymarketQuestionSource(scan_limit=500).fetch_open_within(days=args.max_days, limit=400)
+    if args.non_sports:
+        pool = [q for q in pool if not (_SPORT.search(q.text) or _CRYPTO.search(q.text))]
+        print("non-sports/non-crypto filter ON")
+    questions = pool[:args.limit]
+    print(f"{len(questions)} markets selected (of {len(pool)} matching within {args.max_days} days). "
           f"Models: {cfg.swarm.models}\n")
     if not questions:
-        print("No open markets resolve within the horizon; try a larger --max-days.")
+        print("No matching open markets; try a larger --max-days or drop --non-sports.")
         return
 
-    log_path = ROOT / "data" / "forecasts_forward.jsonl"
+    log_path = ROOT / args.out
     log_path.parent.mkdir(exist_ok=True)
     if log_path.exists():
         log_path.unlink()

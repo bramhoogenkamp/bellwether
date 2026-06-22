@@ -17,6 +17,7 @@ Distance-to-crowd is shown now; Brier is computed for any market that has resolv
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -26,7 +27,6 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-LOG = ROOT / "data" / "forecasts_forward.jsonl"
 
 # Genuine external-forecast leakage (kept tight to avoid flagging "4.62 goals" or
 # "their chances of advancing").
@@ -50,7 +50,10 @@ def _resolved_outcome(gid):
 
 
 def main() -> None:
-    rows = [json.loads(l) for l in LOG.read_text().splitlines() if l.strip()]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--log", default="data/forecasts_forward.jsonl")
+    args = ap.parse_args()
+    rows = [json.loads(l) for l in (ROOT / args.log).read_text().splitlines() if l.strip()]
     done = [r for r in rows if r.get("conditions")]
     for r in done:
         r["_leaked"] = any(LEAK.search(e) for e in r.get("evidence", []))
