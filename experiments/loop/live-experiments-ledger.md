@@ -16,8 +16,8 @@ cells, or establish that the limit is fundamental.
 4. Deliberation depth: vary the number of deliberation rounds, track how far the gap to the oracle closes.
    Done, iteration 3.
 5. Unstructured evidence: messy natural-language slices with a known latent outcome, no deterministic combiner.
-   Proposed next.
-6. Agent-framing A/B: neutral forecaster versus profit-maximizing trader.
+   Done, iteration 4.
+6. Real-data forward test (outside the synthetic lab) and agent-framing A/B. Proposed, not yet run.
 7. Model-mix and forced-diversity variants.
 
 ## Iterations
@@ -63,8 +63,13 @@ structured task admits a deterministic combiner, so move to unstructured evidenc
 rule (iteration 4).
 
 ### Iteration 4, unstructured evidence
-Proposed. Awaiting go-ahead. Plan: synthetic instances where the outcome is still determined by latent facts
-(so there is ground truth) but each agent sees a messy natural-language description rather than a labeled
-condition, so no deterministic rule recovers the answer from the surface text. Re-run the market, average, and
-deliberation-depth comparison and check whether deliberation still recovers the answer when judgment, not
-routing, is required. This is the bridge from the lab toward the real, unstructured setting.
+Live run, write-up in [../info-aggregation/05-unstructured-evidence.md](../info-aggregation/05-unstructured-evidence.md).
+Result: with prose slices the oracle is no longer perfect (0.021), and deliberation closes only about 35 to 50
+percent of the gap to the oracle, versus 83 to 85 percent on the structured cells. unstr-AND went 0.171,
+0.138, 0.124, 0.119 across rounds 0 to 3 and flattened; unstr-OR went 0.329, 0.237, 0.207, 0.174 and was still
+descending. The market again added nothing beyond the deliberated average.
+Decision: the mechanism story holds (market adds nothing, deliberation does the work), but messy evidence
+shifts the bottleneck from transmission to interpretation, so deliberation is useful but not complete and the
+limit becomes how well the models read the evidence. This is the realistic regime. Natural next steps now move
+outside the synthetic lab: a real-data forward test, and the agent-framing A/B. Pausing the synthetic loop here
+is reasonable.

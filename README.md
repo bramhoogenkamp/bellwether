@@ -109,8 +109,12 @@ designs (`experiments/loop/live-experiments-ledger.md`). Findings so far, across
 - Deliberation depth is the lever. Each round roughly halves the Brier toward the oracle, and about three
   rounds nearly recover the information (comp-AND 0.228 to 0.034 across rounds), generalizing across AND and OR
   ([04](experiments/info-aggregation/04-deliberation-depth.md)).
+- On unstructured evidence (prose slices that require interpretation), the oracle is no longer perfect (0.021)
+  and deliberation closes only about 35 to 50 percent of the gap, versus 83 to 85 percent on clean conditions.
+  The bottleneck shifts from transmission to interpretation
+  ([05](experiments/info-aggregation/05-unstructured-evidence.md)).
 
 So the channel and the depth of deliberation do the aggregating, not the market mechanism: a scalar price
-cannot carry a decisive fact, a sentence can. A caveat throughout is that this is the structured task, where a
-deterministic combiner exists; the next step is unstructured evidence with no clean rule. The real-world
-benchmark (ForecastBench, live markets) is wired but separate from this study.
+cannot carry a decisive fact, a sentence can. On clean conditions deliberation nearly recovers the answer; on
+messy evidence it helps but stalls, because reading the evidence becomes the limit. The real-world benchmark
+(ForecastBench, live markets) is wired but separate from this study.
