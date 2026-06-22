@@ -60,13 +60,18 @@ class FakeLLM:
 class LiteLLMClient:
     """Real client via LiteLLM, routed through OpenRouter (one key, many models)."""
 
-    def __init__(self, api_key: str | None = None, prefix: str = "openrouter/"):
+    def __init__(self, api_key: str | None = None, prefix: str = "openrouter/",
+                 timeout: float = 120.0, num_retries: int = 1):
         if api_key is None:
             from ..config import Settings
 
             api_key = Settings().openrouter_api_key
         self.api_key = api_key
         self.prefix = prefix
+        # Without a timeout a dropped or hanging connection blocks forever and stalls
+        # the whole run; with one, a hung call fails fast into the swarm's fallback.
+        self.timeout = timeout
+        self.num_retries = num_retries
 
     def complete(self, *, model: str, system: str, user: str, temperature: float = 0.7) -> str:
         import litellm  # lazy: only needed for real runs
@@ -80,6 +85,8 @@ class LiteLLMClient:
             ],
             temperature=temperature,
             api_key=self.api_key,
+            timeout=self.timeout,
+            num_retries=self.num_retries,
         )
         return resp.choices[0].message.content or ""
 
