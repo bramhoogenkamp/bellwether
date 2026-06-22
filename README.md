@@ -1,131 +1,101 @@
 # Bellwether
 
-*An agent-driven prediction market: AI agents trade an internal market whose price is a live probability.*
+A research harness and prototype for prediction markets in which the traders are LLM agents rather than people.
 
-## Research direction (the novel question)
+## Overview
 
-> **Can a market of LLM agents aggregate *dispersed private information* — reconstructing the
-> full-information forecast from agents who each see only a slice — better than simply averaging them, and
-> under what signal-structure conditions?**
+Bellwether studies whether a market of LLM agents produces better probabilities than simply averaging the
+agents' individual forecasts. The motivation is internal forecasting. Companies have many questions (will this
+feature ship, will this deal close) that never get a real prediction market because there are too few traders.
+A swarm of agents can populate such a market, but it is not obvious that the market mechanism adds anything over
+averaging the agents directly. That is what we test.
 
-This is the Hayek/rational-expectations rationale for markets, applied to LLM agents, and it's genuinely open:
-the closest predecessor (Galanis 2026) measures market-vs-*truth*, never market-vs-*averaging*-vs-*oracle*.
-Full scientific framing + citations: **[`research/intro.md`](research/intro.md)** · references:
-[`research/references.md`](research/references.md). We also benchmark on the public **ForecastBench** and
-live markets (Polymarket/Manifold) to ground it.
+The setup is an LMSR market maker traded by a small swarm of agents, with the price read as a probability. We
+compare the market price against several baselines: a single agent, a plain average, a confidence-weighted
+aggregator, a one-round debate, and a fully informed oracle.
 
+## The question
 
-An exploration into a **company-run, internal prediction market populated and traded solely by AI agents** —
-where you define an event, spin up agents, they take positions, and the market's trading price is the
-live probability.
+When a group of LLM agents each hold only part of the relevant information, can a market that lets them trade
+reconstruct the full picture better than averaging their individual forecasts, and how does the answer depend
+on how the information is split?
 
-## The thesis
+This is the long-standing argument for why markets exist (Hayek, rational expectations): prices aggregate
+dispersed private knowledge. The closest prior work (Galanis 2026) checks whether an LLM market reaches the
+truth; it does not compare the market against averaging or against a fully informed oracle, and it does not
+vary the information structure. Those are the gaps we address. Background and citations are in
+[`research/intro.md`](research/intro.md) and [`research/references.md`](research/references.md).
 
-This exact product does not exist as of mid-2026. The pieces are split across vendors and nobody has fused
-them into one internal, agent-driven, price-discovery market. That is the opportunity.
+One risk runs through all of this: LLM agents are often highly correlated, so a swarm can collapse toward a
+single shared answer. We measure decorrelated diversity rather than assuming it.
 
-The four requirements, and who has which:
+## Experiments
 
-| Requirement | Who has it | What they're missing |
-|---|---|---|
-| Internal / self-hosted + create-your-own event + **real market price discovery** | Cultivate Labs | Built for human employees; agents only via REST API (DIY) |
-| Internal + **ready-made AI bots** | Metaculus private instances + `forecasting-tools` | Aggregation/scoring, not a price-discovery market |
-| **AI-agent-driven markets** | Olas / Rain | Public/crypto, not internal/enterprise |
-| **Agent swarm for internal corporate decisions** | MiroFish | A simulation — no order book, no positions, no price = probability |
+Two tracks, run independently.
 
-→ See [`research/landscape.md`](research/landscape.md) for the full map and sources.
+**1. Information-aggregation study (the controlled experiment).**
+Synthetic questions with known ground truth, where each agent privately sees one slice of the evidence. We
+score six forecasters (single, average, tuned, market, debate, oracle) on identical instances, immediately and
+without leakage. The variable we sweep is the information structure:
 
-## The core open problem
+- substitutable: each slice is a redundant noisy estimate, so averaging should be near-optimal.
+- complementary, AND: resolves yes only if every condition holds, so one agent can hold a decisive no.
+- complementary, OR: resolves yes if any condition holds, so one agent can hold a decisive yes.
+- complementary, threshold: resolves yes on a majority, so no single agent is decisive (the hardest case).
 
-With AI agents as the *only* traders, the market price can collapse toward a single shared model output
-("one model in a trenchcoat") instead of producing the diversity that makes markets smarter than any one
-forecaster. **Engineering genuine agent diversity is the central technical challenge.**
+We expect the market to be close to averaging for substitutable signals, and to beat averaging and approach the
+oracle for complementary signals. The comparison with debate tells us whether the market mechanism, or just the
+exchange of reasoning, is doing the aggregating.
 
-→ See [`research/open-problems.md`](research/open-problems.md).
+```bash
+python scripts/run_infoagg.py --live --n 24 --mlflow      # offline (FakeLLM) without --live
+```
 
-## What the research changed (2026-06-21)
+**2. Real-world benchmark (external validity).**
+Score the same swarm on ForecastBench, a large leak-free public benchmark with superforecaster and market
+baselines, and forward-test it against live markets (Polymarket now, Kalshi planned). These questions resolve
+in the future, so forecasts are logged and scored on resolution, which keeps retrieval honest.
 
-Five parallel research threads (full synthesis in [`research/design-questions.md`](research/design-questions.md))
-**reframed the project**:
-
-- **The value is not the market mechanism** — it's (1) differentiated/internal information, (2) model
-  diversity, (3) calibration, (4) accuracy-based reweighting. A naive average of ~12 LLMs already matches a
-  925-human crowd, and a *tuned* aggregator beat a human market by ~13% (Atanasov 2017). The market must
-  *earn* its complexity.
-- **The moat is internal data, not the trading floor.** A public-info-only agent market collapses to "one
-  model in a trenchcoat" (No-Trade Theorem + correlated LLM errors). The fix: wire agents to internal data
-  (Slack/Jira/CRM via MCP), each reading a *different slice*.
-- **The mechanism is settled: LMSR.** Binary market per question, liquidity set by parameter `b` (synthetic
-  liquidity is literally `b`) — the textbook fix for thin markets. The swarm is settled too: 5–10 independent
-  mixed-model agents → median → √3 calibration. No personas, no debate.
-- **The make-or-break test**: does an AI-agent LMSR market beat both a naive mean *and* a tuned aggregator of
-  the same agents? If only the former → product pivots to a **market + aggregator ensemble** (beats either
-  alone). Run this comparison first.
-
-**Decisions locked:** play money + bankroll (self-correcting reweight) · fractional-Kelly sizing ·
-LMSR binary markets · 5–10 mixed-model agents · median + extremizing calibration · BSS + calibration curve as
-headline metrics. See `research/design-questions.md` for the reasoning behind each.
-
-## Layout
-
-- `research/` — landscape, prior art, open problems, sources
-- `experiments/` — prototypes (market engine, agent loop, diversity tests)
-- `notes/` — running scratch notes, ideas, decisions
+```bash
+python scripts/score_forecastbench.py --market-baseline-only   # the crowd baseline to beat
+python scripts/forecast_open.py                                # forward-test on open markets
+```
 
 ## Code: quickstart
 
 ```bash
-# one-time setup (uv: https://docs.astral.sh/uv/)
 uv venv .venv && uv pip install --python .venv/bin/python -e .
+.venv/bin/python -m pytest                              # unit + offline tests
 
-.venv/bin/python -m pytest                          # run the unit tests
-
-# run the A-G benchmark offline (FakeLLM + mock questions — free, no API key):
-.venv/bin/python scripts/run_benchmark.py --limit 120
-
-# log runs to MLflow, then browse the runs-table to compare configs:
-.venv/bin/python scripts/run_benchmark.py --mlflow
-mlflow ui --backend-store-uri sqlite:///mlflow.db
-
-# watch a market form on one question (offline mock):
-.venv/bin/python scripts/demo_live.py
-
-# real models via OpenRouter (needs OPENROUTER_API_KEY in .env):
-.venv/bin/python scripts/run_benchmark.py --live
+.venv/bin/python scripts/run_infoagg.py --n 24          # the experiment, offline (free)
+mlflow ui --backend-store-uri sqlite:///mlflow.db       # browse results
 ```
 
-Design rationale for every choice: [`research/design-questions.md`](research/design-questions.md).
+Real models run through OpenRouter and need `OPENROUTER_API_KEY` in a `.env` file (gitignored).
 
 ### Code layout
 ```
 src/bellwether/
-  questions/    where events come from: mock_internal (offline), manifold, forecastbench
-  evidence/     how agents get information: mock_internal signal, web stub, MCP-ready seam
-  agents/       LLM clients (FakeLLM + LiteLLM/OpenRouter), Agent, Swarm
+  questions/    sources: synthetic (info-agg), forecastbench, polymarket, manifold, mock_internal
+  evidence/     how agents get information: web (:online) research, mock_internal, leakage guard
+  agents/       LLM clients (LiteLLM/OpenRouter + offline FakeLLM), Agent, Swarm (private + debate)
   market/       LMSR market maker + fractional-Kelly trading
-  aggregate/    naive (B), tuned (C), market (D), ensemble (E)
-  conditions.py the A-G benchmark conditions
-  scoring.py    Brier, BSS, log-loss, calibration/ECE, paired bootstrap
-  calibrate.py  sqrt(3) extremizing transform (+ fit to own history)
-  runner.py     questions -> evidence -> swarm -> conditions -> scores -> MLflow
-  config.py     typed YAML config (logged to MLflow as run params)
-configs/default.yaml  the knobs you sweep      scripts/  run_benchmark, demo_live, pull_questions
-tests/                unit + offline end-to-end tests (run with pytest)
+  aggregate/    naive, tuned, market, ensemble
+  scoring.py    Brier, Brier skill score, log loss, calibration/ECE, Murphy decomposition, bootstrap
+  conditions.py conditions for the real-world benchmark
+  runner.py     question -> evidence -> swarm -> conditions -> score -> MLflow
+configs/        infoagg.yaml (the study), live_good.yaml, default.yaml
+scripts/        run_infoagg.py, score_forecastbench.py, forecast_open.py, run_benchmark.py, demo_live.py
+tests/          unit + offline end-to-end (pytest)
 ```
+
+Design rationale and the literature behind each choice: [`research/intro.md`](research/intro.md),
+[`research/design-questions.md`](research/design-questions.md).
 
 ## Status
 
-Building (2026-06-21). **Done:** Phases 0–6 — the full pipeline runs end-to-end both **offline** (mock + FakeLLM)
-and **live** (real models via OpenRouter), 58 tests passing.
-
-- **Offline (calibrated signal present):** the swarm recovers the truth (≈ oracle), the ensemble (E) wins, and
-  everything beats the biased status-quo baseline; the market (D) ≈ naive (B) on already-calibrated inputs.
-- **Live first benchmark** (25 leak-free June-2026 Manifold questions, cheap models, **no retrieval**): all
-  conditions tie at Brier ≈ 0.25, **BSS ≈ 0 — no skill.** With no information in the agents' hands there is no
-  signal for *any* aggregator to exploit. The pipeline is faithful (it doesn't fake skill) and this confirms
-  the thesis: **differentiated information is the binding constraint, not the mechanism.** See
-  [`experiments/06-first-benchmark/`](experiments/06-first-benchmark/README.md).
-
-**Next (the real unlock):** implement **retrieval** — the web evidence source (with an `as_of` date filter)
-and/or internal data via the MCP seam — so agents actually have signal. Only then does the decisive test (does
-the market D beat the tuned aggregator C?) become meaningful. See [`experiments/README.md`](experiments/README.md).
+The apparatus is built and tested (68 tests). The information-aggregation study runs end to end offline
+(FakeLLM) and live (OpenRouter reasoning models: gpt-5-mini, claude-sonnet-4.5, gemini-2.5-pro, deepseek-r1).
+A preflight confirmed the agents reason correctly on the synthetic format: the oracle solves the conjunction,
+and an agent holding a failed condition is confidently low. The real-world benchmark is wired (ForecastBench
+scoring and a live-market forward-test).
