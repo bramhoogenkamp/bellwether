@@ -53,6 +53,7 @@ class SwarmConfig(BaseModel):
     )
     forecasts_per_agent: int = 1
     temperature: float = 0.7
+    framing: str = "neutral"  # "neutral" honest forecaster, or "trader" gain-maximizer
 
 
 class MarketConfig(BaseModel):

@@ -42,6 +42,18 @@ _LENS_PROMPT = {
     ),
 }
 
+# Framing prefix, the agent-framing A/B knob. Neutral keeps agents as honest
+# forecasters; trader frames them as gain-maximizers (tested as a variable, not the
+# default; see research/self-improving-loop.md).
+_FRAMING = {
+    "neutral": "",
+    "trader": (
+        "You are a profit-maximizing trader in a prediction market. You profit by "
+        "reporting the probability you would bet on, and you lose money by being wrong "
+        "or overconfident, so give the probability that maximizes your expected profit. "
+    ),
+}
+
 _JSON_OBJ = re.compile(r"\{.*\}", re.DOTALL)
 _FLOAT = re.compile(r"\d*\.\d+|\d+")
 
@@ -58,8 +70,9 @@ def _clip01(x: float, lo: float = 0.001, hi: float = 0.999) -> float:
     return max(lo, min(hi, float(x)))
 
 
-def build_system(lens: Lens, sample: int = 0) -> str:
-    system = f"{_LENS_PROMPT.get(lens, _LENS_PROMPT[Lens.neutral])}\n{_BASE_INSTRUCTION}"
+def build_system(lens: Lens, sample: int = 0, framing: str = "neutral") -> str:
+    system = (f"{_FRAMING.get(framing, '')}{_LENS_PROMPT.get(lens, _LENS_PROMPT[Lens.neutral])}\n"
+              f"{_BASE_INSTRUCTION}")
     if sample > 0:  # nudge repeated draws to differ (real: temperature; fake: hash)
         system += f"\n[sample {sample}]"
     return system
@@ -102,16 +115,18 @@ def parse_forecast(raw: str) -> tuple[float, float, str]:
 
 
 class Agent:
-    def __init__(self, model: str, lens: Lens, client: LLMClient, temperature: float = 0.7):
+    def __init__(self, model: str, lens: Lens, client: LLMClient, temperature: float = 0.7,
+                 framing: str = "neutral"):
         self.model = model
         self.lens = lens
         self.client = client
         self.temperature = temperature
+        self.framing = framing
 
     def forecast(
         self, question: Question, evidence: list[EvidenceItem], sample: int = 0
     ) -> Forecast:
-        system = build_system(self.lens, sample)
+        system = build_system(self.lens, sample, self.framing)
         user = build_user(question, evidence)
         raw = self.client.complete(
             model=self.model, system=system, user=user, temperature=self.temperature

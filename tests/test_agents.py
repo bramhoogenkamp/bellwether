@@ -64,3 +64,9 @@ def test_swarm_forecasts_per_agent_multiplies_count():
     cfg = SwarmConfig(models=["m1"], n_agents=2, lenses=[Lens.neutral], forecasts_per_agent=3)
     swarm = Swarm(cfg, get_client("fake"))
     assert len(swarm.run(q, ev)) == 6
+
+
+def test_build_system_framing():
+    from bellwether.agents.agent import build_system
+    assert "profit-maximizing" in build_system(Lens.neutral, framing="trader")
+    assert "profit-maximizing" not in build_system(Lens.neutral, framing="neutral")

@@ -34,7 +34,8 @@ class Swarm:
             # Cycle so each agent gets a distinct (model, lens) pairing where possible.
             model = models[i % len(models)]
             lens = lenses[i % len(lenses)]
-            agents.append(Agent(model, lens, self.client, self.cfg.temperature))
+            agents.append(Agent(model, lens, self.client, self.cfg.temperature,
+                                getattr(self.cfg, "framing", "neutral")))
         return agents
 
     def run(self, question: Question, evidence: list[EvidenceItem]) -> list[Forecast]:
