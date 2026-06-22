@@ -94,8 +94,10 @@ Design rationale and the literature behind each choice: [`research/intro.md`](re
 
 ## Status
 
-The apparatus is built and tested (68 tests). The information-aggregation study runs end to end offline
-(FakeLLM) and live (OpenRouter reasoning models: gpt-5-mini, claude-sonnet-4.5, gemini-2.5-pro, deepseek-r1).
-A preflight confirmed the agents reason correctly on the synthetic format: the oracle solves the conjunction,
-and an agent holding a failed condition is confidently low. The real-world benchmark is wired (ForecastBench
-scoring and a live-market forward-test).
+The apparatus is built and tested (68 tests). The information-aggregation study has run live across all five
+cells (gpt-5-mini, claude-sonnet-4.5, gemini-2.5-pro, deepseek-r1). First result, written up in
+[`experiments/info-aggregation/results.md`](experiments/info-aggregation/results.md): the market never beats a
+plain average, on redundant or complementary information. The information is fully recoverable (the oracle is
+near-perfect on the complementary cells), but only deliberation pools it, because a price is a single scalar
+and cannot carry a decisive fact while a sentence can. The real-world benchmark is wired (ForecastBench scoring
+and a live-market forward-test).
