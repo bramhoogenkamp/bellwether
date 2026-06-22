@@ -18,8 +18,8 @@ cells, or establish that the limit is fundamental.
 5. Unstructured evidence: messy natural-language slices with a known latent outcome, no deterministic combiner.
    Done, iteration 4.
 6. Agent-framing A/B: neutral forecaster versus profit-maximizing trader. Done, iteration 5.
-7. Real-data forward test (outside the synthetic lab). Proposed, not yet run.
-8. Model-mix and forced-diversity variants. Proposed, not yet run.
+7. Model-mix and diversity sweep. Done, iteration 6.
+8. Real-data forward test (outside the synthetic lab). Proposed, not yet run.
 
 ## Iterations
 
@@ -81,6 +81,16 @@ Result: framing agents as profit-maximizing traders did not help and trended wor
 slightly worse ECE on both cells), consistent in direction but not significant at n=24. The market tracked the
 average under both framings.
 Decision: keep agents as neutral honest forecasters; the trader framing buys overconfidence without accuracy.
-The synthetic loop has now answered the mechanism, channel, depth, structure, and framing questions, so it is
-a natural stopping point. The two remaining queue items both leave the lab: a real-data forward test, and a
-model-mix/diversity sweep.
+The synthetic loop has now answered the mechanism, channel, depth, structure, and framing questions. One
+synthetic question remained (does composition matter), run as iteration 6.
+
+### Iteration 6, model-mix / diversity sweep
+Live run, write-up in [../info-aggregation/07-diversity.md](../info-aggregation/07-diversity.md).
+Result: on unstr-AND, the diverse four-model swarm deliberated to 0.097, significantly below a homogeneous
+sonnet swarm at 0.166 (delta -0.078 [-0.143, -0.024]). The strongest single model started best (average 0.165)
+but barely moved with deliberation, ruling out a model-quality explanation. The diverse swarm also disagreed
+more before deliberating (0.066 vs ~0.049).
+Decision: diversity is what makes deliberation work. A swarm of clones has little new to exchange, so its
+deliberation stalls; mixing model families is what gives deliberation something to work with. The near-clone
+concern is real and effective diversity is a genuine ceiling. The synthetic loop is now complete; the only
+remaining queue item leaves the lab (a real-data forward test).

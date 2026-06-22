@@ -113,8 +113,14 @@ designs (`experiments/loop/live-experiments-ledger.md`). Findings so far, across
   and deliberation closes only about 35 to 50 percent of the gap, versus 83 to 85 percent on clean conditions.
   The bottleneck shifts from transmission to interpretation
   ([05](experiments/info-aggregation/05-unstructured-evidence.md)).
+- Framing agents as profit-maximizing traders does not help and trends worse on calibration, so they stay
+  neutral forecasters ([06](experiments/info-aggregation/06-agent-framing.md)). And diversity is what makes
+  deliberation work: a diverse swarm deliberates to 0.097 while a homogeneous swarm of the strongest single
+  model barely moves and stays at 0.166, so a swarm of clones has nothing to exchange
+  ([07](experiments/info-aggregation/07-diversity.md)).
 
-So the channel and the depth of deliberation do the aggregating, not the market mechanism: a scalar price
-cannot carry a decisive fact, a sentence can. On clean conditions deliberation nearly recovers the answer; on
-messy evidence it helps but stalls, because reading the evidence becomes the limit. The real-world benchmark
-(ForecastBench, live markets) is wired but separate from this study.
+So the channel, the depth of deliberation, and the diversity of the agents do the aggregating, not the market
+mechanism: a scalar price cannot carry a decisive fact, a sentence can, and clones have nothing to tell each
+other. On clean conditions deliberation nearly recovers the answer; on messy evidence it helps but stalls,
+because reading the evidence becomes the limit. The real-world benchmark (ForecastBench, live markets) is wired
+but separate from this study.
