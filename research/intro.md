@@ -1,93 +1,69 @@
-# Information Aggregation in Markets of LLM Agents
+# Manufactured Consensus in LLM Agent Collectives
 
-Bellwether research note, v2 (2026-06-22)
+Bellwether research note, v3 (2026-06-23). This supersedes the earlier market-centric framing. The full
+experimental design is in [`study.md`](study.md); the bibliography is in [`references.md`](references.md).
 
 ## The question
 
-Prediction markets are valued for something averaging cannot do. They aggregate information that is scattered
-across many participants, each of whom knows only a piece. This is the Hayekian argument for why markets
-produce good probabilities. As language models become competent forecasters, a question follows: if we give a
-swarm of LLM agents different slices of the evidence, can a market reconstruct the full-information forecast,
-and does it do so better than averaging the agents' individual forecasts?
+We have well-studied ways to turn many opinions into one good probability: average them, run a prediction
+market, or let the group deliberate. All of them inherit a premise from the wisdom-of-crowds literature, that
+the members make independent and diverse errors. Independence is what lets a crowd beat its best member, lets a
+market aggregate scattered private knowledge, and lets deliberation surface what no single person knew. The
+question this study asks is whether that premise survives when the members are language models, and what
+happens to the methods when it does not.
 
-## Background
+## Why it is in doubt
 
-A market is, mathematically, a kind of weighted average. Hanson's Logarithmic Market Scoring Rule, the market
-maker we use, is a logarithmic opinion pool of the traders' beliefs (Chakraborty and Das, NeurIPS 2015), and
-under common assumptions the price equals a wealth-weighted average belief (Wolfers and Zitzewitz 2006). A
-market is therefore not categorically different from averaging. Any advantage has to come from which pool
-emerges, and when.
+Language models are not independent. Nominally different frontier models make highly correlated errors, so a
+panel of nine can carry about two effective votes (Kohli 2026), and aggregation gains show up only when the
+models are genuinely different (Schneider and Schramm 2025). A market does not rescue this, because an LMSR
+market is a weighted average of its traders' beliefs (Chakraborty and Das 2015; Wolfers and Zitzewitz 2006), so
+it cannot add diversity that is not there. And deliberation, the remaining hope, has its own failure mode:
+groups of people fail to pool unshared information and instead converge on what they already share (Stasser and
+Titus 1985), and LLM debate reproduces this on hidden-profile tasks (HiddenBench, Li, Naito and Shirado 2025).
 
-For humans, markets do not decisively beat good averaging. Well-aggregated, extremized, performance-weighted
-polls match or beat prediction markets (Atanasov et al., Management Science 2017; Dana et al. 2019). Markets
-aggregate dispersed private information only under conditions such as market completeness, trader experience,
-and common knowledge of the payoff structure (Plott and Sunder, Econometrica 1988; Forsythe and Lundholm
-1990), and the effect is fragile (Corgnet et al. 2020).
+## What we find, and the claim
 
-For LLMs:
+Across a controlled testbed with a known-answer oracle, and on a live-market forward test, the same picture
+holds. Averaging a swarm of LLMs gains little over a single capable model, because there is little independent
+error to cancel. A market adds nothing over the average. Deliberation is the one thing that moves the needle,
+but it is double-edged. Round by round it raises inter-agent agreement and stated confidence monotonically,
+regardless of whether it is becoming more accurate. When a decisive piece of dispersed information is present,
+deliberation surfaces it and accuracy follows. When it is not, deliberation amplifies the agents' shared bias
+into confident consensus, and accuracy stalls or falls. On the resolved real-market questions, where the agents
+held no decisive private edge, deliberation was the worst aggregator and scored below a coin flip by herding
+into overconfident agreement.
 
-- A simple median or mean of several models already rivals a human crowd, so averaging is a strong baseline
-  (Schoenegger et al., Science Advances 2024).
-- LLM debate fails to pool distributed information. On hidden-profile tasks, groups reach about 30 percent
-  accuracy against about 81 percent for a single agent given the pooled evidence (Li, Naito and Shirado,
-  HiddenBench, arXiv:2505.11556, 2025).
-- An LLM LMSR market with dispersed private signals can approach the true value (Galanis, arXiv:2604.20050,
-  2026). This is the closest prior work.
-- LLM diversity is often an illusion. Nominally different models make highly correlated errors, so nine judges
-  can carry about two independent votes (Kohli, arXiv:2605.29800, 2026), and asking one model to synthesize
-  others is worse than the plain mean (AIA Forecaster, arXiv:2511.07678, 2025).
+The claim, stated plainly: in LLM collectives, deliberation produces agreement and confidence independently of
+correctness, so consensus is not a signal of truth. The effect is not random, it tracks the agents' effective
+diversity and the presence of a decisive dispersed signal, and it is predictable from a swarm's
+pre-deliberation structure.
 
-## The gap
+## The testbed
 
-No study runs the comparison that decides whether a market adds value over averaging for LLM agents holding
-dispersed information. Galanis measures market against truth, the silicon-crowd work measures averaging, and
-HiddenBench measures debate, but none puts market, average, and a fully informed oracle on the same instances,
-and none varies the information structure.
+Each instance has a binary outcome fixed by latent conditions, and each agent privately sees one slice of the
+evidence, so the swarm jointly holds the answer but no single agent does. An oracle given all slices sets the
+achievable bound. We vary the information structure (redundant, complementary AND/OR/threshold) and the
+evidence encoding (clean labels vs messy prose), which lets us place the swarm in regimes where pooling should
+help, should not matter, or should backfire, and measure what each method actually recovers. Because the
+instances are synthetic, every method is scored immediately against ground truth, with no leakage. A
+leakage-controlled forward test on live prediction markets carries the finding to real events.
 
-## What this study does
+## Contributions
 
-We compare six forecasters on identical dispersed-private-information instances: a single agent, a naive
-average, a confidence-weighted and extremized aggregator, an LMSR market, a one-round debate, and a fully
-informed oracle. Each agent privately sees one slice of the evidence. Because the instances are synthetic with
-known ground truth, every forecaster is scored immediately, with no leakage and no waiting for resolution.
+- A controlled testbed for measuring information aggregation in agent collectives against a ground-truth
+  oracle, parameterized by information structure and evidence encoding.
+- A measurement of the effective diversity of frontier models, and evidence that aggregation gains scale with
+  it rather than with agent count.
+- The manufactured-consensus result: deliberation's agreement and confidence decouple from its accuracy, with
+  a controlled regime where deliberation strictly hurts.
+- A predictor that decides, before deliberating, whether deliberation will help, and a gating policy that beats
+  always-deliberate and never-deliberate.
 
-The variable we sweep is the information structure:
+## What this reframes
 
-- substitutable: each slice is a redundant noisy estimate of the same quantity. Averaging is near-optimal, so
-  we expect the market to be close to the average, both approaching the oracle.
-- complementary, AND: the outcome holds only if every condition holds. A single failed condition is decisive,
-  and the agent who sees it knows the answer.
-- complementary, OR: the outcome holds if any condition holds. A single satisfied condition is decisive.
-- complementary, threshold: the outcome holds on a majority. No single agent is decisive, which is the hardest
-  case for any mechanism.
-
-Hypotheses:
-
-- For substitutable signals, the market is close to the average.
-- For complementary signals, the market beats the average and approaches the oracle, because an agent holding a
-  decisive piece can move the price where averaging cannot.
-- The comparison with debate separates two explanations: whether the market institution (skin in the game,
-  price feedback) does the aggregating, or whether exchanging reasoning is enough on its own.
-
-The instances are abstract by design, which is what isolates the mechanism. To show the forecaster is useful on
-real events, we also score the same swarm on ForecastBench and forward-test it against live markets.
-
-## Why this design
-
-It is decisive, because it isolates the market's value over a strong averaging baseline rather than a strawman.
-It is controlled and immediate, because the synthetic instances have known ground truth, so we can score many
-at once with no leakage and no wait. It maps onto the product motivation, because dispersed private information
-across agents is what internal company data partitioned across agents looks like.
-
-## Caveats
-
-- Galanis (2026) already builds an LLM LMSR market with private signals. We differ by comparing against
-  averaging and the oracle, by varying the information structure, and by adding the debate condition, and we
-  cite it directly.
-- LLM agents are correlated, so we measure decorrelated diversity rather than assuming it (Kohli 2026).
-- A market price confounds belief with the agents' prompted risk attitudes and the liquidity parameter (Manski
-  2006). We check calibration and run no-information controls.
-- Strong models may reason about what others know, which can shrink the market's edge. That is itself a useful
-  finding about where mechanism design still matters.
-
-References: [`references.md`](references.md). Design details and metrics: [`design-questions.md`](design-questions.md).
+The project began as a test of whether a market of LLM agents beats averaging. The answer, that it does not,
+is a clean negative result and it is now one experiment in service of the larger point: the machinery of
+collective intelligence behaves differently for correlated agents, and the interesting object is not the
+market but the way deliberation manufactures consensus. The earlier experiments are the base of that argument;
+[`study.md`](study.md) lays out how they fit and what remains to run.

@@ -36,3 +36,13 @@ Annotated bibliography for Bellwether. Grouped by role. (Peer-reviewed unless ma
 - **Barot & Borkhatariya (2026), "PolySwarm," arXiv:2604.03888**, 50 LLM personas trade Polymarket (CLOB); confidence-weighted blend, not LMSR-vs-averaging. *preprint*
 - **Henning et al. (2025), "LLM Agents Do Not Replicate Human Market Traders," arXiv:2502.15800**, bubble paradigm, common info; LLMs price near-rational. *preprint*
 - **"Market Making as a Scalable Framework for Multi-Agent LLM Systems" (2025), arXiv:2511.17621**, bid-ask argumentation, identical models, binary QA; no market-vs-averaging baseline. *preprint*
+
+## Collective intelligence, diversity, and monoculture (the reframed study)
+- **Condorcet (1785), Jury Theorem.** Majority accuracy rises with group size only if members are better than chance and vote independently. The independence premise we test for LLMs.
+- **Hong & Page (2004), "Groups of diverse problem solvers can outperform groups of high-ability problem solvers," PNAS.** https://www.pnas.org/doi/10.1073/pnas.0403723101, Diversity can trump ability, given enough diversity. We ask whether current LLMs clear that diversity floor.
+- **Stasser & Titus (1985), "Pooling of Unshared Information in Group Decision Making," J. Personality and Social Psychology.** The hidden-profile paradigm: groups fail to surface unshared information and converge on what they already share. The human precedent for manufactured consensus.
+- **Du, Li, Torralba, Tenenbaum & Mordatch (2023), "Improving Factuality and Reasoning in Language Models through Multiagent Debate," arXiv:2305.14325.** https://arxiv.org/abs/2305.14325, The debate-helps narrative we give controlled counter-conditions to.
+- **Kleinberg & Raghavan (2021), "Algorithmic monoculture and social welfare," PNAS.** https://www.pnas.org/doi/10.1073/pnas.2018340118, Correlated algorithmic decisions reduce welfare even when the shared algorithm is individually better. The systemic-risk frame for our effective-diversity numbers.
+- **Bommasani, Creel, Bansal, Card & Liang (2022), "Picking on the Same Person: Does Algorithmic Monoculture lead to Outcome Homogenization?", NeurIPS.** https://arxiv.org/abs/2211.13972, Shared models produce correlated outcomes across decisions. Directly relevant to delegating judgment to a few LLMs.
+- **Sharma et al. (2023), "Towards Understanding Sycophancy in Language Models," arXiv:2310.13548.** https://arxiv.org/abs/2310.13548, Models converge toward stated or implied views; a mechanism behind agreement decoupling from truth.
+- **Park et al. (2023), "Generative Agents," UIST.** https://arxiv.org/abs/2304.03442, LLM agents as controllable social simulations; the methodological precedent for using swarms as a testbed for collective behavior.

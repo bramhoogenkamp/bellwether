@@ -1,33 +1,34 @@
 # Bellwether
 
-A research harness and prototype for prediction markets in which the traders are LLM agents rather than people.
+A research harness and study of how collectives of LLM agents aggregate information, and why the methods built
+for human crowds behave differently for them.
 
 ## Overview
 
-Bellwether studies whether a market of LLM agents produces better probabilities than simply averaging the
-agents' individual forecasts. The motivation is internal forecasting. Companies have many questions (will this
-feature ship, will this deal close) that never get a real prediction market because there are too few traders.
-A swarm of agents can populate such a market, but it is not obvious that the market mechanism adds anything over
-averaging the agents directly. That is what we test.
+Bellwether studies what happens when the machinery of collective intelligence, averaging, prediction markets,
+and deliberation, is used on swarms of LLM agents instead of people. That machinery assumes members make
+independent, diverse errors. Frontier models do not: they are near-clones with highly correlated errors. We
+show the consequences. Averaging gains little, a market adds nothing over the average, and deliberation
+amplifies the agents' shared consensus, raising agreement and confidence whether or not it improves accuracy.
+Deliberation helps only when a decisive piece of dispersed information is present, and hurts otherwise. On the
+resolved real-market questions, where the agents held no decisive edge, deliberation was the worst aggregator
+and scored below a coin flip by herding into overconfident agreement.
 
-The setup is an LMSR market maker traded by a small swarm of agents, with the price read as a probability. We
-compare the market price against several baselines: a single agent, a plain average, a confidence-weighted
-aggregator, a one-round debate, and a fully informed oracle.
+The central claim: in LLM collectives, deliberation produces agreement and confidence independently of
+correctness, so consensus is not evidence of truth, and a swarm's pre-deliberation structure predicts whether
+deliberation will help or hurt.
 
-## The question
+The project began as a test of whether a market of LLM agents beats averaging (it does not) and reframed around
+that larger finding. The full study design is in [`research/study.md`](research/study.md); framing and
+citations are in [`research/intro.md`](research/intro.md) and [`research/references.md`](research/references.md).
 
-When a group of LLM agents each hold only part of the relevant information, can a market that lets them trade
-reconstruct the full picture better than averaging their individual forecasts, and how does the answer depend
-on how the information is split?
+## The setup
 
-This is the long-standing argument for why markets exist (Hayek, rational expectations): prices aggregate
-dispersed private knowledge. The closest prior work (Galanis 2026) checks whether an LLM market reaches the
-truth; it does not compare the market against averaging or against a fully informed oracle, and it does not
-vary the information structure. Those are the gaps we address. Background and citations are in
-[`research/intro.md`](research/intro.md) and [`research/references.md`](research/references.md).
-
-One risk runs through all of this: LLM agents are often highly correlated, so a swarm can collapse toward a
-single shared answer. We measure decorrelated diversity rather than assuming it.
+A controlled testbed: synthetic questions with a known-answer oracle, where each agent privately sees one slice
+of the evidence, so the swarm jointly holds the answer but no single agent does. We vary the information
+structure and how messy the evidence is, score every method immediately against ground truth, and carry the
+finding to real events with a leakage-controlled forward test on live prediction markets. Diversity is
+measured, not assumed.
 
 ## Experiments
 
