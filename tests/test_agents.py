@@ -70,3 +70,16 @@ def test_build_system_framing():
     from bellwether.agents.agent import build_system
     assert "profit-maximizing" in build_system(Lens.neutral, framing="trader")
     assert "profit-maximizing" not in build_system(Lens.neutral, framing="neutral")
+
+
+def test_confederate_injection_does_not_change_swarm_size():
+    from bellwether.agents.agent import Forecast
+    from bellwether.questions.synthetic import generate_info_instances
+    inst = generate_info_instances(n=1, n_agents=4, structure="complementary", seed=0, rule="and")[0]
+    swarm = Swarm(SwarmConfig(models=["m1"], n_agents=4, lenses=[Lens.neutral]), get_client("fake"))
+    prior = swarm.forecast_each_private(inst.question, inst.slices)
+    conf = Forecast(probability=0.95, confidence=0.95, model="confederate", thesis="I am confident it is YES.")
+    revised = swarm.run_debate_round(inst.question, inst.slices, prior, extra_peers=[conf])
+    # the confederate is shown to the agents but is not part of the returned swarm
+    assert len(revised) == 4
+    assert all(f.model != "confederate" for f in revised)

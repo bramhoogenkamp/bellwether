@@ -178,6 +178,54 @@ def _unstructured(i: int, n_agents: int, rng, target_base_rate: float, rule: str
     return InfoInstance(qn, slices, pooled, "unstructured", {"statuses": statuses, "rule": rule})
 
 
+# Consensus trap (the controlled backfire). Every agent sees the same loud, salient,
+# misleading headline pointing the wrong way, plus one quiet private detail pointing the
+# right way. A single agent anchored on the shared headline leans wrong; the pooled
+# private details outweigh the headline, so the oracle is right. Deliberation converges
+# on the common ground (the shared headline), so it should herd the swarm toward the
+# wrong answer. This isolates manufactured consensus from genuine pooling.
+_TRAP_DETAILS = [
+    "a line item in the appendix",
+    "a timestamp on the internal log",
+    "a footnote in the supplier contract",
+    "a quiet remark from the team lead",
+    "a small discrepancy in the figures",
+    "an offhand note in the changelog",
+    "a single dissenting reviewer comment",
+]
+
+
+def _consensus_trap(i: int, n_agents: int, rng) -> InfoInstance:
+    k = n_agents
+    y = 1.0 if rng.random() < 0.5 else 0.0
+    correct = "YES" if y == 1.0 else "NO"
+    wrong = "NO" if y == 1.0 else "YES"
+    text = (
+        "Will the project clear its review? You have each seen the same public summary "
+        "plus one private detail of your own. Weigh them and give your probability."
+    )
+    headline = EvidenceItem(
+        text=(f"PUBLIC SUMMARY (widely circulated, prominent): essentially every headline "
+              f"indicator points to the answer being {wrong}."),
+        source="shared-headline",
+    )
+    details = list(rng.choice(_TRAP_DETAILS, size=k, replace=False))
+    slices, pooled = [], [headline]
+    for j in range(k):
+        hint = EvidenceItem(
+            text=f"Your private detail: {details[j]} quietly but specifically indicates {correct}.",
+            source="private-detail",
+        )
+        slices.append([headline, hint])
+        pooled.append(hint)
+    qn = Question(
+        id=f"syn-trap-{i:04d}", text=text, outcome=y, source="synthetic",
+        category="consensus-trap",
+        metadata={"k": k, "shared_points": wrong, "private_points": correct},
+    )
+    return InfoInstance(qn, slices, pooled, "consensus-trap", {"y": y})
+
+
 def generate_info_instances(
     n: int = 50,
     n_agents: int = 4,
@@ -192,8 +240,8 @@ def generate_info_instances(
     ``structure`` = "substitutable" | "complementary"; for complementary, ``rule`` =
     "and" | "or" | "threshold" sets the aggregation function (the key categorization).
     """
-    if structure not in ("substitutable", "complementary", "unstructured"):
-        raise ValueError("structure must be 'substitutable', 'complementary', or 'unstructured'")
+    if structure not in ("substitutable", "complementary", "unstructured", "consensus-trap"):
+        raise ValueError("structure must be 'substitutable', 'complementary', 'unstructured', or 'consensus-trap'")
     rng = np.random.default_rng(seed)
     out = []
     for i in range(n):
@@ -201,6 +249,8 @@ def generate_info_instances(
             out.append(_substitutable(i, n_agents, rng, noise))
         elif structure == "unstructured":
             out.append(_unstructured(i, n_agents, rng, target_base_rate, rule))
+        elif structure == "consensus-trap":
+            out.append(_consensus_trap(i, n_agents, rng))
         else:
             out.append(_complementary(i, n_agents, rng, target_base_rate, rule))
     return out

@@ -159,6 +159,20 @@ Each lists the question, design, the metric, the result that would confirm it, a
 - Falsifies. If deliberation recovers and discounts the shared cue, the manufactured-consensus claim is too
   strong.
 
+#### D3. The confederate manipulation (C3, the causal centerpiece)
+- Question. Is the decoupling causal? Can a confident view be injected to move the consensus and inflate
+  confidence regardless of truth?
+- Design. Per instance, deliberate three ways: control, a confident wrong confederate injected as a peer each
+  round, and a confident right confederate. The confederate carries a position and a generic justification with
+  no real information, so any swarm movement toward it is herding, not pooling. Script:
+  `scripts/run_confederate.py`.
+- Metric. Herding coefficient (fraction of the way the swarm moves toward the injected position), change in
+  confidence, change in Brier.
+- Confirms. Positive herding with a CI excluding 0, confidence up under both confederates, and the wrong
+  confederate raising Brier above control. This turns the correlational decoupling into a demonstrated
+  mechanism and is the result most resistant to the "it is just your prompt" critique.
+- Falsifies. A herding coefficient indistinguishable from 0.
+
 #### P1. Predicting deliberation's sign (C4, the method)
 - Question. From features available before deliberating, can we predict whether deliberation will raise or lower
   accuracy?
@@ -222,10 +236,26 @@ forward-test and scoring scripts are in the repo. Each experiment note carries i
   judgment risk is the lead.
 - The Collective Intelligence conference is the thematic home if we lead with the social-epistemology angle.
 
+## Implementation status (apparatus built, ready to run)
+
+The confirmatory apparatus and the pre-registration ([`preregistration.md`](preregistration.md)) are in the
+repo and verified offline. Live runs are gated on the budget decision.
+
+- D1 decoupling: `scripts/run_decoupling.py` (per-round Brier, gap-to-oracle, agreement, calibration,
+  confidence over substitutable / complementary / consensus-trap).
+- D2 consensus trap: generator in `src/bellwether/questions/synthetic.py` (structure "consensus-trap").
+- D3 confederate manipulation: `scripts/run_confederate.py`, using injected peers in
+  `Swarm.run_debate_round(extra_peers=...)`.
+- P1 predictor: `scripts/predict_deliberation.py`, with leave-one-condition-out CV, a gated policy, and a
+  transfer mode (train synthetic, test a held-out log).
+- Calibration and agreement metrics are computed in the experiment scripts; the forward-test scoring with
+  leakage exclusion is in `scripts/score_forward.py`.
+
 ## Roadmap
 
-1. Done: the testbed, the seven base experiments, the forward test and its first resolution.
-2. Next, cheap and on the existing harness: D1 (decoupling trajectories), D2 (consensus trap), P1 (predictor).
-   These need no new infrastructure, only the new conditions and logging, and they carry the paper.
-3. Then, needs a model zoo and budget: M1 (effective diversity at scale) and the scaling/ablations.
-4. Ongoing: X1 forward-test resolutions; X2 HiddenBench replication.
+1. Done: the testbed, the seven base experiments, the forward test and its first resolution, and the
+   confirmatory apparatus above with its pre-registration.
+2. The confirmatory runs (gated on budget), at the pre-registered sample sizes: D1, D3 (the causal centerpiece),
+   D2, then P1 on their logs plus the transfer test. These carry the paper and run on the existing harness.
+3. Needs a model zoo and budget: M1 (effective diversity at scale) and the scaling and ablation sweeps.
+4. Ongoing: X1 forward-test resolutions; X2 HiddenBench replication and the predictor transfer onto it.

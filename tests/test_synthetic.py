@@ -8,6 +8,21 @@ from bellwether.config import Lens, SwarmConfig
 from bellwether.questions.synthetic import generate_info_instances
 
 
+def test_consensus_trap_structure():
+    inst = generate_info_instances(n=20, n_agents=4, structure="consensus-trap", seed=1)
+    assert len(inst) == 20
+    for x in inst:
+        assert x.question.outcome in (0.0, 1.0)
+        # every agent shares the same loud headline, plus one private detail
+        assert len(x.slices) == 4
+        assert all(len(s) == 2 and s[0].source == "shared-headline" for s in x.slices)
+        # pooled = one shared headline + one private detail per agent
+        assert sum(1 for e in x.pooled if e.source == "shared-headline") == 1
+        assert sum(1 for e in x.pooled if e.source == "private-detail") == 4
+        # the shared cue points opposite to the private details (that is the trap)
+        assert x.question.metadata["shared_points"] != x.question.metadata["private_points"]
+
+
 def test_substitutable_structure():
     inst = generate_info_instances(n=5, n_agents=4, structure="substitutable", seed=0)
     assert len(inst) == 5

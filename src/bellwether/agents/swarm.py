@@ -89,18 +89,30 @@ class Swarm:
         return out
 
     def run_debate_round(
-        self, question: Question, slices: list[list[EvidenceItem]], prior: list[Forecast]
+        self, question: Question, slices: list[list[EvidenceItem]], prior: list[Forecast],
+        extra_peers: list[Forecast] | None = None,
     ) -> list[Forecast]:
         """One deliberation round: each agent revises after seeing peers' forecasts +
         theses (its private slice still attached). The comparator for 'does a market
         beat mere talk?' — peers' theses carry their private information, as in debate.
+
+        ``extra_peers`` are injected, shown to every agent as additional peers but NOT
+        part of the returned swarm. This is the confederate manipulation: pass a single
+        confident (often wrong) Forecast and measure whether the real agents herd toward
+        it and grow more confident, which separates manufactured consensus from genuine
+        pooling causally.
         """
+        injected = extra_peers or []
         revised: list[Forecast] = []
         for i, agent in enumerate(self.agents):
             peers = [
                 EvidenceItem(text=f"Another forecaster says p={f.probability:.2f}: {f.thesis}",
                              source="peer")
                 for j, f in enumerate(prior) if j != i
+            ] + [
+                EvidenceItem(text=f"Another forecaster says p={f.probability:.2f}: {f.thesis}",
+                             source="peer")
+                for f in injected
             ]
             evidence = self._private_evidence(slices, i) + peers
             try:
