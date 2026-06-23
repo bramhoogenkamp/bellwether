@@ -108,3 +108,13 @@ resolving (leak-safe) subset.
 Decision: distance-to-crowd is not accuracy, so the real verdict waits for resolution. The sports-heavy set is
 a weak showcase for the dispersed-information finding, which is itself a finding: short-horizon liquid markets
 do not contain much dispersed analyzable evidence.
+
+Resolution update (2026-06-23, 12 clean questions settled): the crowd won (Brier 0.137), plain averaging had
+modest skill (0.193, beats the 0.250 coin-flip line), and deliberation was the worst and worse than a coin flip
+(0.264). Deliberation actively hurt by making the swarm more confident, and when the shared consensus was wrong
+that confidence was costly (it deliberated "Argentina win Group J" down from 0.70 to 0.38 on a yes, and "Claude
+Fable 5 restored" up from 0.65 to 0.97 on a no). This is the real-world mirror of the lab: deliberation
+amplifies the consensus, which helps when a decisive fact exists to pool and hurts when only shared public reads
+do. Caveats: n=12, outlier-sensitive, and the dispersed-private-information case (the non-sports analyzable set)
+resolves mostly end-2026, so the thesis itself is still unscored. A separate, non-sports analyzable run
+(17 questions, data/forecasts_forward_nonsports.jsonl) is logged and awaiting resolution.
